@@ -755,6 +755,11 @@ class BankingAdminGUI(QMainWindow):
         new_account_action = account_menu.addAction("New Account")
         new_account_action.triggered.connect(self.accounts_manager.create_new_account)
         account_menu.addSeparator()
+
+        new_account_action = account_menu.addAction("Remove Account")
+        new_account_action.triggered.connect(self.accounts_manager.remove_account)
+        account_menu.addSeparator()
+
         batch_interest_action = account_menu.addAction("Apply Batch Interest")
         batch_interest_action.triggered.connect(
             self.accounts_manager.apply_batch_interest
