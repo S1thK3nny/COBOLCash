@@ -18,9 +18,10 @@ from PyQt6.QtWidgets import (
     QDoubleSpinBox,
     QDateEdit,
     QStackedWidget,
+    QDialog,
 )
 from PyQt6.QtCore import QDate, pyqtSignal
-import Account
+from Account import Account, AccountType, AccountStatus
 
 
 class AccountDetailsWidget(QWidget):
@@ -329,11 +330,13 @@ class AccountsManagerWidget(QWidget):
         self.search_input.setPlaceholderText("Search by account number or name...")
         self.search_button = QPushButton("Search")
         self.filter_status = QComboBox()
-        self.filter_status.addItems(["All Accounts", "Active", "Frozen", "Closed"])
+        self.filter_status.addItem("All Accounts", None)
+        for status in AccountStatus:
+            self.filter_status.addItem(status.value, status)
         self.filter_type = QComboBox()
-        self.filter_type.addItems(
-            ["All Types", "Checking", "Savings", "Credit", "Loan"]
-        )
+        self.filter_type.addItem("All Types", None)
+        for acc_type in AccountType:
+            self.filter_type.addItem(acc_type.value, acc_type)
 
         search_layout.addWidget(self.search_input)
         search_layout.addWidget(self.search_button)
@@ -354,6 +357,8 @@ class AccountsManagerWidget(QWidget):
         # Action buttons
         button_layout = QHBoxLayout()
         self.btn_new_account = QPushButton("New Account")
+        self.btn_new_account.clicked.connect(self.create_new_account)
+
         self.btn_view_details = QPushButton("View Details")
         self.btn_batch_interest = QPushButton("Batch Interest")
         self.btn_export = QPushButton("Export Data")
@@ -385,8 +390,66 @@ class AccountsManagerWidget(QWidget):
 
     def create_new_account(self):
         """Open dialog to create new account"""
-        # Will be implemented
-        pass
+        dlg = QDialog(self)
+        dlg.setWindowTitle("Create New Account")
+        dlg.setMinimumSize(400, 300)
+
+        layout = QVBoxLayout()
+
+        form_layout = QFormLayout()
+
+        # Account Holder field
+        self.input_account_holder = QLineEdit()
+        form_layout.addRow("Account Holder:", self.input_account_holder)
+
+        # Account Type field using a QComboBox with enum values
+        self.combo_account_type = QComboBox()
+        for acc_type in AccountType:
+            self.combo_account_type.addItem(acc_type.value, acc_type)
+        form_layout.addRow("Account Type:", self.combo_account_type)
+
+        # Initial Balance field using QDoubleSpinBox
+        self.input_balance = QDoubleSpinBox()
+        self.input_balance.setRange(0, 1e9)
+        self.input_balance.setPrefix("$")
+        self.input_balance.setDecimals(2)
+        form_layout.addRow("Initial Balance:", self.input_balance)
+
+        layout.addLayout(form_layout)
+
+        # Add form fields and buttons here
+        self.btn_create = QPushButton("Create Account")
+        self.btn_cancel = QPushButton("Cancel")
+        layout.addWidget(self.btn_create)
+        layout.addWidget(self.btn_cancel)
+
+        dlg.setLayout(layout)
+        self.btn_create.clicked.connect(dlg.accept)
+        self.btn_cancel.clicked.connect(dlg.reject)
+
+        if dlg.exec() == QDialog.DialogCode.Accepted:
+            account_holder = self.input_account_holder.text().strip()
+
+            account_type = (
+                self.combo_account_type.currentData()
+            )  # Returns AccountType enum
+            balance = self.input_balance.value()
+
+            # Create the new account
+            new_account = Account(
+                account_number=0,  # TODO: This should be auto-generated or fetched from the database
+                account_holder=account_holder,
+                account_type=account_type,
+                balance=balance,
+                status=AccountStatus.ACTIVE,
+            )
+
+            # Here you might add the new account to your account list or database
+            print("New account created:", new_account)
+            # For example, you might call:
+            # self.account_list.append(new_account)
+        else:
+            print("Account creation canceled.")
 
     def view_account_details(self):
         """View details of selected account"""
