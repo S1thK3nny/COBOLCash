@@ -23,7 +23,7 @@ from PyQt6.QtWidgets import (
     QHeaderView,
     QMessageBox,
 )
-from PyQt6.QtCore import QDate, pyqtSignal
+from PyQt6.QtCore import QDate, pyqtSignal, Qt
 from Account import Account, AccountType, AccountStatus
 from AccountList import AccountsTableModel
 
@@ -339,6 +339,7 @@ class AccountsManagerWidget(QWidget):
             QHeaderView.ResizeMode.Stretch
         )
         self.table_view.setSortingEnabled(True)
+        self.table_view.sortByColumn(0, Qt.SortOrder.AscendingOrder)
 
         # Optionally, add search and filter tools:
         search_layout = QHBoxLayout()
