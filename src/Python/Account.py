@@ -46,3 +46,6 @@ class Account:
                 self.creation_date.strftime("%Y-%m-%d") if self.creation_date else None
             ),
         }
+
+    def __str__(self):
+        return f"Account #{self.account_number}: {self.account_holder} ({self.account_type}) - ${self.balance:.2f} - {self.status} - {self.creation_date})"

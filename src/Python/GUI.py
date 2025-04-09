@@ -20,6 +20,7 @@ from PyQt6.QtWidgets import (
     QStackedWidget,
 )
 from PyQt6.QtCore import QDate, pyqtSignal
+import Account
 
 
 class AccountDetailsWidget(QWidget):
