@@ -1,3 +1,6 @@
+# pylint: disable=no-name-in-module
+# pylint: disable=import-error
+
 from PyQt6.QtCore import (
     QAbstractTableModel,
     Qt,
