@@ -286,7 +286,9 @@ class TransactionWidget(QWidget):
         self.deposit_description = QLineEdit()
         self.btn_process_deposit = QPushButton("Process Deposit")
 
-        layout.addRow("Account Number:", self.deposit_account)
+        layout.addRow(
+            "Account Number:", self.deposit_account
+        )  # TODO: Find a better way for this
         layout.addRow("Amount:", self.deposit_amount)
         layout.addRow("Description:", self.deposit_description)
         layout.addRow("", self.btn_process_deposit)
