@@ -63,8 +63,11 @@ class AccountDetailsWidget(QWidget):
         action_layout = QHBoxLayout()
 
         self.btn_edit = QPushButton("Edit Details")
+        self.btn_edit.clicked.connect(self.edit_account_details)
+
         self.btn_freeze = QPushButton("Freeze Account")
         self.btn_freeze.clicked.connect(self.toggle_freeze)
+
         self.btn_close = QPushButton("Close Account")
         self.btn_close.clicked.connect(self.close_account)
 
@@ -114,6 +117,49 @@ class AccountDetailsWidget(QWidget):
 
         self.setLayout(layout)
 
+    def edit_account_details(self):
+        """
+        Open a dialog to edit account details.
+        The dialog contains fields for account holder name and type.
+        The changes are applied to the current account.
+        """
+        if not self.current_account:
+            return
+
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Edit Account Details")
+        layout = QVBoxLayout()
+        form_layout = QFormLayout()
+
+        # Editable fields
+        name_edit = QLineEdit(self.current_account.account_holder)
+        type_combo = QComboBox()
+        for acc_type in AccountType:
+            type_combo.addItem(acc_type.value, acc_type)
+        type_combo.setCurrentIndex(
+            list(AccountType).index(self.current_account.account_type)
+        )
+
+        form_layout.addRow("Account Holder:", name_edit)
+        form_layout.addRow("Account Type:", type_combo)
+        layout.addLayout(form_layout)
+
+        # Buttons
+        btn_save = QPushButton("Save")
+        btn_cancel = QPushButton("Cancel")
+        btn_save.clicked.connect(dialog.accept)
+        btn_cancel.clicked.connect(dialog.reject)
+        layout.addWidget(btn_save)
+        layout.addWidget(btn_cancel)
+
+        dialog.setLayout(layout)
+
+        if dialog.exec():
+            # Apply changes
+            self.current_account.account_holder = name_edit.text().strip()
+            self.current_account.account_type = type_combo.currentData()
+            self.load_account_data(self.current_account)
+
     def toggle_freeze(self):
         """
         Toggle the freeze status of the current account.
@@ -130,6 +176,7 @@ class AccountDetailsWidget(QWidget):
 
         self.status.setText(self.current_account.status.value)
         self.load_account_data(self.current_account)  # Refresh button states
+        # TODO: Add COBOL interaction to update the account status in the backend
 
     def close_account(self):
         """
@@ -147,6 +194,7 @@ class AccountDetailsWidget(QWidget):
         if confirm == QMessageBox.StandardButton.Yes:
             self.current_account.status = AccountStatus.CLOSED
             self.load_account_data(self.current_account)  # Refresh
+        # TODO: Add COBOL interaction to update the account status in the backend
 
     def load_account_data(self, account):
         self.current_account = account
@@ -457,7 +505,7 @@ class AccountsManagerWidget(QWidget):
             row = selected_indexes[0].row()
             account = self.accounts_model.get_account(row)
             if account:
-                print("Selected account:", account.account_number)
+                print("Selected account #", account.account_number)
                 self.account_selected.emit(account)
 
     def switch(self, index):
