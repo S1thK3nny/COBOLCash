@@ -327,6 +327,9 @@ class AccountsManagerWidget(QWidget):
         self.initUI()
 
     def initUI(self):
+        """
+        Initialize the UI components for the Accounts Manager.
+        """
         # Create a QTableView and set the model
         self.table_view = QTableView()
         self.table_view.setModel(self.accounts_model)
@@ -340,20 +343,22 @@ class AccountsManagerWidget(QWidget):
         search_layout = QHBoxLayout()
         self.search_input = QLineEdit()
         self.search_input.setPlaceholderText("Search by account number or name...")
-        self.search_button = QPushButton("Search")
+        self.search_input.textChanged.connect(
+            lambda text: self.accounts_model.set_filter(text)
+        )
+        self.search_input.setClearButtonEnabled(True)
+
         self.filter_status = QComboBox()
         self.filter_status.addItem("All Accounts", None)
-
         for status in AccountStatus:
             self.filter_status.addItem(status.value, status)
+
         self.filter_type = QComboBox()
         self.filter_type.addItem("All Types", None)
-
         for acc_type in AccountType:
             self.filter_type.addItem(acc_type.value, acc_type)
 
         search_layout.addWidget(self.search_input)
-        search_layout.addWidget(self.search_button)
         search_layout.addWidget(self.filter_status)
         search_layout.addWidget(self.filter_type)
 
@@ -402,7 +407,9 @@ class AccountsManagerWidget(QWidget):
 
         # Account Holder field
         self.input_account_holder = QLineEdit()
-        form_layout.addRow("Account Holder:", self.input_account_holder)
+        form_layout.addRow(
+            "Account Holder:", self.input_account_holder
+        )  # TODO: Fix empty field
 
         # Account Type field using a QComboBox with enum values
         self.combo_account_type = QComboBox()
@@ -453,6 +460,10 @@ class AccountsManagerWidget(QWidget):
             print("Account creation canceled.")
 
     def remove_account(self):
+        """
+        Remove selected account from the list and update the model.
+        This method will be called when the "Remove Account" button is clicked.
+        """
         selected_indexes = self.table_view.selectionModel().selectedRows()
         if not selected_indexes:
             print("Tried to remove account, but none selected.")

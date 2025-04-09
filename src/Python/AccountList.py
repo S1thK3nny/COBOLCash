@@ -8,8 +8,10 @@ from PyQt6.QtCore import (
 class AccountsTableModel(QAbstractTableModel):
     def __init__(self, accounts=None):
         super().__init__()
-        self._accounts = accounts or []
+        self._all_accounts = accounts or []
+        self._accounts = list(self._all_accounts)  # filtered view
         self._headers = ["Account #", "Account Holder", "Type", "Balance", "Status"]
+        self._filter_text = ""
 
     def rowCount(self, parent=QModelIndex()):
         return len(self._accounts)
@@ -38,7 +40,6 @@ class AccountsTableModel(QAbstractTableModel):
             elif col == 1:
                 return account.account_holder
             elif col == 2:
-                # Use the enum's value
                 return account.account_type.value
             elif col == 3:
                 return f"${account.balance:.2f}"
@@ -47,33 +48,41 @@ class AccountsTableModel(QAbstractTableModel):
         return None
 
     def add_account(self, account):
-        """Add an account to the model and notify the view."""
-        self.beginInsertRows(QModelIndex(), self.rowCount(), self.rowCount())
-        self._accounts.append(account)
-        self.endInsertRows()
+        self._all_accounts.append(account)
+        self.set_filter(
+            self._filter_text
+        )  # Re-apply filter to include new match if relevant
 
     def remove_account(self, account):
-        """Remove an account from the model and notify the view."""
         try:
-            row = self._accounts.index(account)
+            self._all_accounts.remove(account)
         except ValueError:
-            print("Account not found in the model.")
+            print("Account not found in full list.")
             return
-        self.beginRemoveRows(QModelIndex(), row, row)
-        self._accounts.pop(row)
-        self.endRemoveRows()
+        self.set_filter(self._filter_text)
 
     def update_account(self, row, account):
-        """Update an account in the model (for example, after editing)."""
+        # Update based on visible row in filtered list
         if 0 <= row < len(self._accounts):
-            self._accounts[row] = account
-            # Notify views that data at this row has changed
-            left_index = self.index(row, 0)
-            right_index = self.index(row, self.columnCount() - 1)
-            self.dataChanged.emit(
-                left_index, right_index, [Qt.ItemDataRole.DisplayRole]
-            )
+            real_index = self._all_accounts.index(self._accounts[row])
+            self._all_accounts[real_index] = account
+            self.set_filter(self._filter_text)  # Refresh visible list
 
-    def get_account(self, account_number):
-        """Get an account by its account number."""
-        return self._accounts[account_number]
+    def get_account(self, visible_row):
+        if 0 <= visible_row < len(self._accounts):
+            return self._accounts[visible_row]
+        return None
+
+    def set_filter(self, text):
+        self.beginResetModel()
+        self._filter_text = text.lower().strip()
+        if not self._filter_text:
+            self._accounts = list(self._all_accounts)
+        else:
+            self._accounts = [
+                acc
+                for acc in self._all_accounts
+                if self._filter_text in str(acc.account_number).lower()
+                or self._filter_text in acc.account_holder.lower()
+            ]
+        self.endResetModel()
