@@ -343,20 +343,20 @@ class AccountsManagerWidget(QWidget):
         search_layout = QHBoxLayout()
         self.search_input = QLineEdit()
         self.search_input.setPlaceholderText("Search by account number or name...")
-        self.search_input.textChanged.connect(
-            lambda text: self.accounts_model.set_filter(text)
-        )
+        self.search_input.textChanged.connect(lambda text: self.apply_filters())
         self.search_input.setClearButtonEnabled(True)
 
         self.filter_status = QComboBox()
         self.filter_status.addItem("All Accounts", None)
         for status in AccountStatus:
             self.filter_status.addItem(status.value, status)
+        self.filter_status.currentIndexChanged.connect(lambda: self.apply_filters())
 
         self.filter_type = QComboBox()
         self.filter_type.addItem("All Types", None)
         for acc_type in AccountType:
             self.filter_type.addItem(acc_type.value, acc_type)
+        self.filter_type.currentIndexChanged.connect(lambda: self.apply_filters())
 
         search_layout.addWidget(self.search_input)
         search_layout.addWidget(self.filter_status)
@@ -394,6 +394,13 @@ class AccountsManagerWidget(QWidget):
             account_id = self.table_view.item(selected_row, 0).text()
             print("Selected account ID:", account_id)
             self.account_selected.emit(account_id)
+
+    def apply_filters(self):
+        text = self.search_input.text()
+        status = self.filter_status.currentData()
+        acc_type = self.filter_type.currentData()
+        print("Applying filters:", text, status, acc_type)
+        self.accounts_model.set_filters(text, status, acc_type)
 
     def create_new_account(self):
         """Open dialog to create new account"""

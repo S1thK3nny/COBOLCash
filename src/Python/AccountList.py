@@ -11,7 +11,11 @@ class AccountsTableModel(QAbstractTableModel):
         self._all_accounts = accounts or []
         self._accounts = list(self._all_accounts)  # filtered view
         self._headers = ["Account #", "Account Holder", "Type", "Balance", "Status"]
+
+        # Filters
         self._filter_text = ""
+        self._filter_status = None
+        self._filter_type = None
 
     def rowCount(self, parent=QModelIndex()):
         return len(self._accounts)
@@ -49,9 +53,7 @@ class AccountsTableModel(QAbstractTableModel):
 
     def add_account(self, account):
         self._all_accounts.append(account)
-        self.set_filter(
-            self._filter_text
-        )  # Re-apply filter to include new match if relevant
+        self.update_filters()
 
     def remove_account(self, account):
         try:
@@ -59,30 +61,38 @@ class AccountsTableModel(QAbstractTableModel):
         except ValueError:
             print("Account not found in full list.")
             return
-        self.set_filter(self._filter_text)
+        self.update_filters()
 
     def update_account(self, row, account):
         # Update based on visible row in filtered list
         if 0 <= row < len(self._accounts):
             real_index = self._all_accounts.index(self._accounts[row])
             self._all_accounts[real_index] = account
-            self.set_filter(self._filter_text)  # Refresh visible list
+        self.update_filters()
 
     def get_account(self, visible_row):
         if 0 <= visible_row < len(self._accounts):
             return self._accounts[visible_row]
         return None
 
-    def set_filter(self, text):
+    def set_filters(self, text="", status=None, acc_type=None):
         self.beginResetModel()
         self._filter_text = text.lower().strip()
-        if not self._filter_text:
-            self._accounts = list(self._all_accounts)
-        else:
-            self._accounts = [
-                acc
-                for acc in self._all_accounts
-                if self._filter_text in str(acc.account_number).lower()
+        self._filter_status = status
+        self._filter_type = acc_type
+
+        self._accounts = [
+            acc
+            for acc in self._all_accounts
+            if (
+                not self._filter_text
                 or self._filter_text in acc.account_holder.lower()
-            ]
+                or self._filter_text in str(acc.account_number)
+            )
+            and (status is None or acc.status == status)
+            and (acc_type is None or acc.account_type == acc_type)
+        ]
         self.endResetModel()
+
+    def update_filters(self):
+        self.set_filters(self._filter_text, self._filter_status, self._filter_type)
