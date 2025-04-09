@@ -33,6 +33,7 @@ class AccountDetailsWidget(QWidget):
 
     def __init__(self):
         super().__init__()
+        current_account = None
         self.initUI()
 
     def initUI(self):
@@ -63,7 +64,9 @@ class AccountDetailsWidget(QWidget):
 
         self.btn_edit = QPushButton("Edit Details")
         self.btn_freeze = QPushButton("Freeze Account")
+        self.btn_freeze.clicked.connect(self.toggle_freeze)
         self.btn_close = QPushButton("Close Account")
+        self.btn_close.clicked.connect(self.close_account)
 
         action_layout.addWidget(self.btn_edit)
         action_layout.addWidget(self.btn_freeze)
@@ -111,13 +114,65 @@ class AccountDetailsWidget(QWidget):
 
         self.setLayout(layout)
 
+    def toggle_freeze(self):
+        """
+        Toggle the freeze status of the current account.
+        If the account is active, it will be frozen, and vice versa.
+        If the account is closed, no action will be taken.
+        """
+        if not self.current_account:
+            return
+
+        if self.current_account.status == AccountStatus.FROZEN:
+            self.current_account.status = AccountStatus.ACTIVE
+        elif self.current_account.status == AccountStatus.ACTIVE:
+            self.current_account.status = AccountStatus.FROZEN
+
+        self.status.setText(self.current_account.status.value)
+        self.load_account_data(self.current_account)  # Refresh button states
+
+    def close_account(self):
+        """
+        Confirm and close the selected account.
+        """
+        if not self.current_account:
+            return
+
+        confirm = QMessageBox.question(
+            self,
+            "Confirm Close",
+            f"Are you sure you want to close account #{self.current_account.account_number}?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+        )
+        if confirm == QMessageBox.StandardButton.Yes:
+            self.current_account.status = AccountStatus.CLOSED
+            self.load_account_data(self.current_account)  # Refresh
+
     def load_account_data(self, account):
+        self.current_account = account
+
         self.account_number.setText(str(account.account_number))
         self.account_holder.setText(account.account_holder)
         self.account_type.setText(account.account_type.value)
         self.creation_date.setText(account.creation_date.strftime("%Y-%m-%d"))
         self.current_balance.setText(f"${account.balance:.2f}")
         self.status.setText(account.status.value)
+
+        # Update button states based on status
+        if account.status == AccountStatus.ACTIVE:
+            self.btn_freeze.setEnabled(True)
+            self.btn_close.setEnabled(True)
+            self.btn_edit.setEnabled(True)
+            self.btn_freeze.setText("Freeze Account")
+        elif account.status == AccountStatus.FROZEN:
+            self.btn_freeze.setEnabled(True)
+            self.btn_close.setEnabled(True)
+            self.btn_edit.setEnabled(False)
+            self.btn_freeze.setText("Unfreeze Account")
+        elif account.status == AccountStatus.CLOSED:
+            self.btn_freeze.setEnabled(False)
+            self.btn_close.setEnabled(False)
+            self.btn_edit.setEnabled(False)
 
     def load_transaction_history(
         self, account_id, date_from=None, date_to=None, trans_type=None
