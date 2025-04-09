@@ -111,10 +111,13 @@ class AccountDetailsWidget(QWidget):
 
         self.setLayout(layout)
 
-    def load_account_data(self, account_id):
-        """Load account details from backend"""
-        # This will be implemented to interact with COBOL
-        pass
+    def load_account_data(self, account):
+        self.account_number.setText(str(account.account_number))
+        self.account_holder.setText(account.account_holder)
+        self.account_type.setText(account.account_type.value)
+        self.creation_date.setText(account.creation_date.strftime("%Y-%m-%d"))
+        self.current_balance.setText(f"${account.balance:.2f}")
+        self.status.setText(account.status.value)
 
     def load_transaction_history(
         self, account_id, date_from=None, date_to=None, trans_type=None
@@ -319,7 +322,8 @@ class TransactionWidget(QWidget):
 class AccountsManagerWidget(QWidget):
     """Widget for managing accounts"""
 
-    account_selected = pyqtSignal(str)
+    account_selected = pyqtSignal(Account)
+    account_selected_double_clicked = pyqtSignal(Account)
 
     def __init__(self, accounts_model):
         super().__init__()
@@ -340,6 +344,10 @@ class AccountsManagerWidget(QWidget):
         )
         self.table_view.setSortingEnabled(True)
         self.table_view.sortByColumn(0, Qt.SortOrder.AscendingOrder)
+        self.table_view.selectionModel().selectionChanged.connect(
+            self.on_account_selected
+        )
+        self.table_view.doubleClicked.connect(self.switch)
 
         # Optionally, add search and filter tools:
         search_layout = QHBoxLayout()
@@ -389,13 +397,19 @@ class AccountsManagerWidget(QWidget):
         self.setLayout(layout)
 
     def on_account_selected(self):
-        """Handle account selection from the table"""
-        # Will emit signal with account ID
-        selected_row = self.table_view.currentRow()
-        if selected_row >= 0:
-            account_id = self.table_view.item(selected_row, 0).text()
-            print("Selected account ID:", account_id)
-            self.account_selected.emit(account_id)
+        selected_indexes = self.table_view.selectionModel().selectedRows()
+        if selected_indexes:
+            row = selected_indexes[0].row()
+            account = self.accounts_model.get_account(row)
+            if account:
+                print("Selected account:", account.account_number)
+                self.account_selected.emit(account)
+
+    def switch(self, index):
+        """Switch to the account details tab"""
+        self.account_selected_double_clicked.emit(
+            self.accounts_model.get_account(index.row())
+        )
 
     def apply_filters(self):
         text = self.search_input.text()
@@ -728,6 +742,7 @@ class BankingAdminGUI(QMainWindow):
         self.setWindowTitle("Banking Admin System")
         self.setMinimumSize(1000, 700)
         self.accounts_model = AccountsTableModel([])
+        self.selected_account = None
         self.initUI()
 
     def initUI(self):
@@ -748,8 +763,13 @@ class BankingAdminGUI(QMainWindow):
         self.tabs.addTab(self.reports_widget, "Reports")
         self.tabs.addTab(self.settings_widget, "Settings")
 
+        self.tabs.currentChanged.connect(self.on_tab_changed)
+
         # Connect signals
         self.accounts_manager.account_selected.connect(self.show_account_details)
+        self.accounts_manager.account_selected_double_clicked.connect(
+            self.switchToDetails
+        )
 
         # Set the central widget
         self.setCentralWidget(self.tabs)
@@ -813,10 +833,16 @@ class BankingAdminGUI(QMainWindow):
         about_action = help_menu.addAction("About")
         help_action = help_menu.addAction("User Guide")
 
-    def show_account_details(self, account_id):
-        """Show account details in the account details tab"""
-        self.account_details.load_account_data(account_id)
-        self.tabs.setCurrentIndex(1)  # Switch to account details tab
+    def show_account_details(self, account):
+        self.selected_account = account  # store it for later
+
+    def on_tab_changed(self, index):
+        if self.tabs.widget(index) is self.account_details and self.selected_account:
+            self.account_details.load_account_data(self.selected_account)
+
+    def switchToDetails(self):
+        """Switch to the account details tab"""
+        self.tabs.setCurrentIndex(1)
 
     def backup_database(self):
         """Backup the database"""
