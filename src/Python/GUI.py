@@ -21,6 +21,7 @@ from PyQt6.QtWidgets import (
     QDialog,
     QTableView,
     QHeaderView,
+    QMessageBox,
 )
 from PyQt6.QtCore import QDate, pyqtSignal
 from Account import Account, AccountType, AccountStatus
@@ -359,9 +360,11 @@ class AccountsManagerWidget(QWidget):
         # Action buttons at the bottom
         button_layout = QHBoxLayout()
         self.btn_new_account = QPushButton("New Account")
-
         self.btn_new_account.clicked.connect(self.create_new_account)
-        self.btn_view_details = QPushButton("View Details")
+
+        self.btn_view_details = QPushButton("Remove Account")
+        self.btn_view_details.clicked.connect(self.remove_account)
+
         self.btn_batch_interest = QPushButton("Batch Interest")
         self.btn_export = QPushButton("Export Data")
 
@@ -381,9 +384,10 @@ class AccountsManagerWidget(QWidget):
     def on_account_selected(self):
         """Handle account selection from the table"""
         # Will emit signal with account ID
-        selected_row = self.accounts_table.currentRow()
+        selected_row = self.table_view.currentRow()
         if selected_row >= 0:
-            account_id = self.accounts_table.item(selected_row, 0).text()
+            account_id = self.table_view.item(selected_row, 0).text()
+            print("Selected account ID:", account_id)
             self.account_selected.emit(account_id)
 
     def create_new_account(self):
@@ -448,10 +452,18 @@ class AccountsManagerWidget(QWidget):
         else:
             print("Account creation canceled.")
 
-    def view_account_details(self):
-        """View details of selected account"""
-        # Will be implemented
-        pass
+    def remove_account(self):
+        selected_indexes = self.table_view.selectionModel().selectedRows()
+        if not selected_indexes:
+            print("Tried to remove account, but none selected.")
+            QMessageBox.warning(self, "Warning", "No account selected.")
+            return
+
+        selected_row = selected_indexes[0].row()
+        print(f"Removing Account #{selected_row}")
+        self.accounts_model.remove_account(
+            self.accounts_model.get_account(selected_row)
+        )
 
     def apply_batch_interest(self):
         """Apply interest to multiple accounts"""

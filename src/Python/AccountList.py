@@ -57,6 +57,7 @@ class AccountsTableModel(QAbstractTableModel):
         try:
             row = self._accounts.index(account)
         except ValueError:
+            print("Account not found in the model.")
             return
         self.beginRemoveRows(QModelIndex(), row, row)
         self._accounts.pop(row)
@@ -72,3 +73,7 @@ class AccountsTableModel(QAbstractTableModel):
             self.dataChanged.emit(
                 left_index, right_index, [Qt.ItemDataRole.DisplayRole]
             )
+
+    def get_account(self, account_number):
+        """Get an account by its account number."""
+        return self._accounts[account_number]
