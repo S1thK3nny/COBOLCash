@@ -96,3 +96,20 @@ class AccountsTableModel(QAbstractTableModel):
 
     def update_filters(self):
         self.set_filters(self._filter_text, self._filter_status, self._filter_type)
+
+    def sort(self, column, order):
+        self.layoutAboutToBeChanged.emit()
+
+        def sort_key(account):
+            return {
+                0: account.account_number,
+                1: account.account_holder.lower(),
+                2: account.account_type.value,
+                3: account.balance,
+                4: account.status.value,
+            }[column]
+
+        reverse = order == Qt.SortOrder.DescendingOrder
+        self._accounts.sort(key=sort_key, reverse=reverse)
+
+        self.layoutChanged.emit()

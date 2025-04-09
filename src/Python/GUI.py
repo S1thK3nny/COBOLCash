@@ -338,6 +338,7 @@ class AccountsManagerWidget(QWidget):
         self.table_view.horizontalHeader().setSectionResizeMode(
             QHeaderView.ResizeMode.Stretch
         )
+        self.table_view.setSortingEnabled(True)
 
         # Optionally, add search and filter tools:
         search_layout = QHBoxLayout()
