@@ -20,6 +20,7 @@ from PyQt6.QtWidgets import (
     QStackedWidget,
     QDialog,
     QTableView,
+    QHeaderView,
 )
 from PyQt6.QtCore import QDate, pyqtSignal
 from Account import Account, AccountType, AccountStatus
@@ -328,6 +329,11 @@ class AccountsManagerWidget(QWidget):
         # Create a QTableView and set the model
         self.table_view = QTableView()
         self.table_view.setModel(self.accounts_model)
+        self.table_view.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
+        self.table_view.horizontalHeader().setStretchLastSection(True)
+        self.table_view.horizontalHeader().setSectionResizeMode(
+            QHeaderView.ResizeMode.Stretch
+        )
 
         # Optionally, add search and filter tools:
         search_layout = QHBoxLayout()
@@ -336,12 +342,12 @@ class AccountsManagerWidget(QWidget):
         self.search_button = QPushButton("Search")
         self.filter_status = QComboBox()
         self.filter_status.addItem("All Accounts", None)
-        # Assuming AccountStatus is an Enum defined elsewhere
+
         for status in AccountStatus:
             self.filter_status.addItem(status.value, status)
         self.filter_type = QComboBox()
         self.filter_type.addItem("All Types", None)
-        # Assuming AccountType is an Enum defined elsewhere
+
         for acc_type in AccountType:
             self.filter_type.addItem(acc_type.value, acc_type)
 
@@ -353,7 +359,7 @@ class AccountsManagerWidget(QWidget):
         # Action buttons at the bottom
         button_layout = QHBoxLayout()
         self.btn_new_account = QPushButton("New Account")
-        # Connect this button to your account creation method
+
         self.btn_new_account.clicked.connect(self.create_new_account)
         self.btn_view_details = QPushButton("View Details")
         self.btn_batch_interest = QPushButton("Batch Interest")

@@ -2,7 +2,7 @@ from PyQt6.QtCore import (
     QAbstractTableModel,
     Qt,
     QModelIndex,
-)  # For PyQt6, adjust role references as needed.
+)
 
 
 class AccountsTableModel(QAbstractTableModel):
