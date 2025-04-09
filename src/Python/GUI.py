@@ -19,9 +19,11 @@ from PyQt6.QtWidgets import (
     QDateEdit,
     QStackedWidget,
     QDialog,
+    QTableView,
 )
 from PyQt6.QtCore import QDate, pyqtSignal
 from Account import Account, AccountType, AccountStatus
+from AccountList import AccountsTableModel
 
 
 class AccountDetailsWidget(QWidget):
@@ -317,24 +319,29 @@ class AccountsManagerWidget(QWidget):
 
     account_selected = pyqtSignal(str)
 
-    def __init__(self):
+    def __init__(self, accounts_model):
         super().__init__()
+        self.accounts_model = accounts_model
         self.initUI()
 
     def initUI(self):
-        layout = QVBoxLayout()
+        # Create a QTableView and set the model
+        self.table_view = QTableView()
+        self.table_view.setModel(self.accounts_model)
 
-        # Search and filter tools
+        # Optionally, add search and filter tools:
         search_layout = QHBoxLayout()
         self.search_input = QLineEdit()
         self.search_input.setPlaceholderText("Search by account number or name...")
         self.search_button = QPushButton("Search")
         self.filter_status = QComboBox()
         self.filter_status.addItem("All Accounts", None)
+        # Assuming AccountStatus is an Enum defined elsewhere
         for status in AccountStatus:
             self.filter_status.addItem(status.value, status)
         self.filter_type = QComboBox()
         self.filter_type.addItem("All Types", None)
+        # Assuming AccountType is an Enum defined elsewhere
         for acc_type in AccountType:
             self.filter_type.addItem(acc_type.value, acc_type)
 
@@ -343,22 +350,11 @@ class AccountsManagerWidget(QWidget):
         search_layout.addWidget(self.filter_status)
         search_layout.addWidget(self.filter_type)
 
-        # Accounts table
-        self.accounts_table = QTableWidget()
-        self.accounts_table.setColumnCount(5)
-        self.accounts_table.setHorizontalHeaderLabels(
-            ["Account #", "Account Holder", "Type", "Balance", "Status"]
-        )
-        self.accounts_table.setSelectionBehavior(
-            QTableWidget.SelectionBehavior.SelectRows
-        )
-        self.accounts_table.doubleClicked.connect(self.on_account_selected)
-
-        # Action buttons
+        # Action buttons at the bottom
         button_layout = QHBoxLayout()
         self.btn_new_account = QPushButton("New Account")
+        # Connect this button to your account creation method
         self.btn_new_account.clicked.connect(self.create_new_account)
-
         self.btn_view_details = QPushButton("View Details")
         self.btn_batch_interest = QPushButton("Batch Interest")
         self.btn_export = QPushButton("Export Data")
@@ -368,17 +364,13 @@ class AccountsManagerWidget(QWidget):
         button_layout.addWidget(self.btn_batch_interest)
         button_layout.addWidget(self.btn_export)
 
-        # Add the components to main layout
+        # Set up the main layout
+        layout = QVBoxLayout()
         layout.addLayout(search_layout)
-        layout.addWidget(self.accounts_table)
+        layout.addWidget(self.table_view)
         layout.addLayout(button_layout)
 
         self.setLayout(layout)
-
-    def load_accounts(self, filter_text=None, status=None, account_type=None):
-        """Load accounts based on filter criteria"""
-        # Will be implemented to interact with COBOL
-        pass
 
     def on_account_selected(self):
         """Handle account selection from the table"""
@@ -435,7 +427,6 @@ class AccountsManagerWidget(QWidget):
             )  # Returns AccountType enum
             balance = self.input_balance.value()
 
-            # Create the new account
             new_account = Account(
                 account_number=0,  # TODO: This should be auto-generated or fetched from the database
                 account_holder=account_holder,
@@ -447,7 +438,7 @@ class AccountsManagerWidget(QWidget):
             # Here you might add the new account to your account list or database
             print("New account created:", new_account)
             # For example, you might call:
-            # self.account_list.append(new_account)
+            self.accounts_model.add_account(new_account)
         else:
             print("Account creation canceled.")
 
@@ -698,6 +689,7 @@ class BankingAdminGUI(QMainWindow):
         super().__init__()
         self.setWindowTitle("Banking Admin System")
         self.setMinimumSize(1000, 700)
+        self.accounts_model = AccountsTableModel([])
         self.initUI()
 
     def initUI(self):
@@ -705,7 +697,7 @@ class BankingAdminGUI(QMainWindow):
         self.tabs = QTabWidget()
 
         # Create the various tabs
-        self.accounts_manager = AccountsManagerWidget()
+        self.accounts_manager = AccountsManagerWidget(self.accounts_model)
         self.account_details = AccountDetailsWidget()
         self.transaction_widget = TransactionWidget()
         self.reports_widget = ReportsWidget()
