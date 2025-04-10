@@ -45,7 +45,6 @@ def compile_cobol():
     return True
 
 
-# Example usage
 if os.path.isfile(BINARY_PATH):
     print("COBOL program exists.")
 else:
