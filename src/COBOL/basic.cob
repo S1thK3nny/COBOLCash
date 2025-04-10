@@ -105,7 +105,7 @@
                    DISPLAY "ERROR|Unknown command"
            END-EVALUATE.
 
-       CURRENT-DATE-INTO-CDD.
+       CURRENT-DATE-INTO-PLU.
            MOVE FUNCTION CURRENT-DATE TO CURRENT-DATE-DATA
            STRING CD-YEAR DELIMITED BY SIZE
                     "-" DELIMITED BY SIZE
@@ -114,14 +114,28 @@
                     CD-DAY DELIMITED BY SIZE
            INTO PARAM-LAST-UPDATE.
 
+       GET-AVAILABLE-ACCOUNT-NUMBER.
+      * Find and increment the last account number
+      * Need to use AR-ACCOUNT-NUMBER here instead of directly
+      * PARAM-ACCOUNT-NUMBER because it is the record key
+           MOVE HIGH-VALUES TO AR-ACCOUNT-NUMBER
+           START ACCOUNT-FILE KEY IS <= AR-ACCOUNT-NUMBER
+           IF SUCCESS
+               READ ACCOUNT-FILE PREVIOUS RECORD
+               IF SUCCESS
+                   ADD 1 TO AR-ACCOUNT-NUMBER
+                   MOVE AR-ACCOUNT-NUMBER TO PARAM-ACCOUNT-NUMBER
+               END-IF
+           END-IF.
+
        CREATE-ACCOUNT.
            UNSTRING STDIN-LINE DELIMITED BY "|"
                 INTO COMMAND, PARAM-ACCOUNT-HOLDER,
                 PARAM-ACCOUNT-TYPE, PARAM-ACCOUNT-BALANCE
                
-           PERFORM CURRENT-DATE-INTO-CDD
+           PERFORM CURRENT-DATE-INTO-PLU
+           PERFORM GET-AVAILABLE-ACCOUNT-NUMBER
            
-           MOVE 1 TO PARAM-ACCOUNT-NUMBER
            MOVE PARAM-ACCOUNT-NUMBER TO AR-ACCOUNT-NUMBER
            MOVE PARAM-ACCOUNT-HOLDER TO AR-ACCOUNT-HOLDER
            MOVE PARAM-ACCOUNT-TYPE TO AR-ACCOUNT-TYPE
@@ -129,11 +143,16 @@
            MOVE "ACTIVE" TO AR-STATUS
            MOVE PARAM-LAST-UPDATE TO AR-OPEN-DATE
            MOVE PARAM-LAST-UPDATE TO AR-LAST-UPDATE
-           DISPLAY     "INFO|Creating account"
-           DISPLAY     "INFO|Account Number: " AR-ACCOUNT-NUMBER
-           DISPLAY     "INFO|Account Holder: " AR-ACCOUNT-HOLDER
-           DISPLAY     "INFO|Account Type: " AR-ACCOUNT-TYPE
-           DISPLAY     "INFO|Account Balance: " AR-ACCOUNT-BALANCE
-           DISPLAY     "INFO|Account Status: " AR-STATUS
-           DISPLAY     "INFO|Account Open Date: " AR-OPEN-DATE
-           DISPLAY     "INFO|Account Last Update: " AR-LAST-UPDATE.
+
+           WRITE ACCOUNT-RECORD
+               INVALID KEY
+                   DISPLAY "ERROR|Account creation failed"
+               NOT INVALID KEY
+                   DISPLAY "OK|" AR-ACCOUNT-NUMBER 
+                   "|Account created successfully"
+           END-WRITE.
+
+      *     IF SUCCESS
+      * Create transaction if the balance is above 0, need to implement
+      * the transaction stuff before that though
+      *     END-IF.
