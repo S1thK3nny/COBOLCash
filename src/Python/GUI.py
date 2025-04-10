@@ -32,9 +32,10 @@ from COBOLInterface import COBOL_list_accounts
 class AccountDetailsWidget(QWidget):
     """Widget to display detailed account information"""
 
-    def __init__(self):
+    def __init__(self, accounts_model):
         super().__init__()
         current_account = None
+        self.accounts_model = accounts_model
         self.initUI()
 
     def initUI(self):
@@ -193,9 +194,8 @@ class AccountDetailsWidget(QWidget):
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
         )
         if confirm == QMessageBox.StandardButton.Yes:
-            self.current_account.status = AccountStatus.CLOSED
+            self.accounts_model.remove_account(self.current_account)
             self.load_account_data(self.current_account)  # Refresh
-        # TODO: Add COBOL interaction to update the account status in the backend
 
     def load_account_data(self, account):
         self.current_account = account
@@ -846,7 +846,7 @@ class BankingAdminGUI(QMainWindow):
 
         # Create the various tabs
         self.accounts_manager = AccountsManagerWidget(self.accounts_model)
-        self.account_details = AccountDetailsWidget()
+        self.account_details = AccountDetailsWidget(self.accounts_model)
         self.transaction_widget = TransactionWidget()
         self.reports_widget = ReportsWidget()
         self.settings_widget = SettingsWidget()
