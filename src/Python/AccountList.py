@@ -6,8 +6,10 @@ from PyQt6.QtCore import (
     Qt,
     QModelIndex,
 )
-from Account import AccountStatus
+from Account import Account, AccountStatus
 from COBOLInterface import COBOL_call, COBOL_get_account
+
+# TODO: Update methods to all use the same stuff (either rows or accounts, no mixing)
 
 
 class AccountsTableModel(QAbstractTableModel):
@@ -71,10 +73,12 @@ class AccountsTableModel(QAbstractTableModel):
         self.update_filters()
         print("Account created successfully:", account)
 
-    def remove_account(self, account):
+    def close_account(self, account):
         # Keep the account, but close it
         try:
-            response = COBOL_call(f"DELETE-ACCOUNT|{account.account_number}")
+            response = COBOL_call(
+                f"UPDATE-ACCOUNT|{account.account_number}|STATUS|Closed"
+            )
             if response.startswith("ERROR"):
                 print("Error deleting account:", response)
                 return
@@ -85,12 +89,62 @@ class AccountsTableModel(QAbstractTableModel):
         self.update_filters()
         print("Account closed successfully:", account)
 
-    def update_account(self, row, account):
-        # Update based on visible row in filtered list
-        if 0 <= row < len(self._accounts):
-            real_index = self._all_accounts.index(self._accounts[row])
-            self._all_accounts[real_index] = account
+    def update_account(self, account: Account, updated_fields: dict):
+        """
+        Update specific fields of an account in the filtered view and propagate to the backend.
+
+        Args:
+            row: The visible row index in the filtered view.
+            updated_fields: Dict of fields to update, e.g. {"balance": 2000.0}
+        """
+        if not account in self._all_accounts:
+            print("Invalid account")
+            return
+
+        # Apply changes locally
+        changed_fields = []
+        for field, new_value in updated_fields.items():
+            if hasattr(account, field):
+                old_value = getattr(account, field)
+                if old_value != new_value:
+                    setattr(account, field, new_value)
+                    changed_fields.append(field)
+            else:
+                print(f"Warning: Unknown field '{field}' ignored.")
+
+        if not changed_fields:
+            print("No changes detected.")
+            return
+
+        for field in changed_fields:
+            value = getattr(account, field)
+            if hasattr(value, "value"):  # Enum to string
+                value = value.value
+            command = f"UPDATE-ACCOUNT|{account.account_number}|{field.upper()}|{value}"
+            response = COBOL_call(command)
+            if response.startswith("ERROR"):
+                print(
+                    f"Error updating field '{field}' for account {account.account_number}: {response}"
+                )
+                return
+
+        # Update succeeded, trigger UI refresh
         self.update_filters()
+
+        print(f"Account {account.account_number} updated: {changed_fields}")
+
+    def remove_account(self, account):
+        try:
+            response = COBOL_call(f"DELETE-ACCOUNT|{account.account_number}")
+            if response.startswith("ERROR"):
+                print("Error deleting account:", response)
+                return
+        except ValueError:
+            print("Account not found in full list.")
+            return
+        self._all_accounts.remove(account)
+        self.update_filters()
+        print("Account removed successfully:", account)
 
     def get_account(self, visible_row):
         if 0 <= visible_row < len(self._accounts):

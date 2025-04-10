@@ -6,7 +6,7 @@ COBOL_DIRECTORY = "src/COBOL/"
 BINARY_PATH = os.path.join(COBOL_DIRECTORY, "basic")
 
 
-def COBOL_call(command_string, verbose=False):
+def COBOL_call(command_string, verbose=True):
     proc = subprocess.Popen(
         [BINARY_PATH],
         stdin=subprocess.PIPE,

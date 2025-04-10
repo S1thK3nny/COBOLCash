@@ -56,12 +56,15 @@
            05 CD-DAY           PIC 9(2).
 
        01  PARAM-ACCOUNT-NUMBER    PIC 9(6).
-       01  PARAM-ACCOUNT-HOLDER    PIC X(100).
+       01  PARAM-ACCOUNT-HOLDER    PIC X(50).
        01  PARAM-ACCOUNT-TYPE      PIC X(10).
        01  PARAM-ACCOUNT-BALANCE   PIC 9(9)V99.
        01  PARAM-STATUS            PIC X(10).
        01  PARAM-OPEN-DATE         PIC X(10).
        01  PARAM-LAST-UPDATE       PIC X(10).
+
+       01  PARAM-FIELD             PIC X(20).
+       01  PARAM-VALUE             PIC X(50).
        
        01 WS-EOF             PIC X VALUE 'N'.
        
@@ -105,8 +108,10 @@
                    PERFORM GET-ACCOUNT
                WHEN "LIST-ACCOUNTS"
                    PERFORM LIST-ACCOUNTS
-                WHEN "DELETE-ACCOUNT"
+               WHEN "DELETE-ACCOUNT"
                    PERFORM DELETE-ACCOUNT
+               WHEN "UPDATE-ACCOUNT"
+                   PERFORM UPDATE-ACCOUNT
                WHEN OTHER
                    DISPLAY "ERROR|Unknown command"
            END-EVALUATE.
@@ -216,14 +221,42 @@
                EXIT PARAGRAPH
            END-IF
 
-           MOVE "Closed" TO AR-STATUS
+           DELETE ACCOUNT-FILE
+           IF SUCCESS
+               DISPLAY "OK|Account deleted successfully"
+           ELSE
+               DISPLAY "ERROR|Failed to deleted account"
+           END-IF.
+
+       UPDATE-ACCOUNT.
+           UNSTRING STDIN-LINE DELIMITED BY "|"
+           INTO COMMAND, PARAM-ACCOUNT-NUMBER, PARAM-FIELD, PARAM-VALUE
+
+           MOVE PARAM-ACCOUNT-NUMBER TO AR-ACCOUNT-NUMBER
+           READ ACCOUNT-FILE
+           IF NOT SUCCESS
+               DISPLAY "ERROR|Account not found"
+               EXIT PARAGRAPH
+           END-IF
+
+           EVALUATE PARAM-FIELD
+               WHEN "ACCOUNT_HOLDER"
+                   MOVE PARAM-VALUE TO AR-ACCOUNT-HOLDER
+               WHEN "ACCOUNT_TYPE"
+                   MOVE PARAM-VALUE TO AR-ACCOUNT-TYPE
+               WHEN "STATUS"
+                   MOVE PARAM-VALUE TO AR-STATUS
+               WHEN OTHER
+                   DISPLAY "ERROR|Unknown PARAM-FIELD"
+           END-EVALUATE.
 
            PERFORM CURRENT-DATE-INTO-PLU
            MOVE PARAM-LAST-UPDATE TO AR-LAST-UPDATE
 
            REWRITE ACCOUNT-RECORD
            IF SUCCESS
-               DISPLAY "OK|Account closed successfully"
+               DISPLAY "OK|Account updated successfully|" PARAM-FIELD
+      -        "|" PARAM-VALUE
            ELSE
-               DISPLAY "ERROR|Failed to close account"
+               DISPLAY "ERROR|Failed to update account"
            END-IF.
