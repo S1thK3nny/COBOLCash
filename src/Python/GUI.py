@@ -572,18 +572,7 @@ class AccountsManagerWidget(QWidget):
             )  # Returns AccountType enum
             balance = self.input_balance.value()
 
-            new_account = Account(
-                account_number=0,  # TODO: This should be auto-generated or fetched from the database
-                account_holder=account_holder,
-                account_type=account_type,
-                balance=balance,
-                status=AccountStatus.ACTIVE,
-            )
-
-            # Here you might add the new account to your account list or database
-            print("New account created:", new_account)
-            # For example, you might call:
-            self.accounts_model.add_account(new_account)
+            self.accounts_model.add_account(account_holder, account_type, balance)
         else:
             print("Account creation canceled.")
 

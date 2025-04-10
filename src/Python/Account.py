@@ -68,6 +68,32 @@ class Account:
             ),
         }
 
+    def from_dict(self, data):
+        """
+        Populates the account object from a dictionary.
+
+        Args:
+            data (dict): A dictionary containing account data.
+        """
+        self.account_number = data.get("account_number", self.account_number)
+        self.account_holder = data.get("account_holder", self.account_holder)
+        self.account_type = AccountType(
+            data.get("account_type", self.account_type.value)
+        )
+        self.balance = data.get("balance", self.balance)
+        self.status = AccountStatus(data.get("status", self.status.value))
+        creation_date_str = data.get("creation_date")
+        if creation_date_str:
+            self.creation_date = datetime.strptime(creation_date_str, "%Y-%m-%d")
+
+    def from_list(self, data):
+        self.account_number = int(data[0])
+        self.account_holder = data[1]
+        self.account_type = AccountType(data[2].title())
+        self.balance = float(data[3])
+        self.status = AccountStatus(data[4].title())
+        self.creation_date = datetime.strptime(data[5], "%Y-%m-%d")
+
     def __str__(self):
         return (
             f"Account #{self.account_number}: {self.account_holder} "
