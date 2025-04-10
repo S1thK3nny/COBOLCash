@@ -3,8 +3,16 @@
 import sys
 from GUI import BankingAdminGUI
 from PyQt6.QtWidgets import QApplication
+from COBOLInterface import COBOL_compile
 
 if __name__ == "__main__":
+    # Compile the COBOL program before running the GUI
+    if not COBOL_compile():
+        print("Failed to compile COBOL program. Exiting.")
+        sys.exit(1)
+    print("COBOL program compiled successfully.")
+
+    # Initialize the GUI application
     app = QApplication(sys.argv)
     window = BankingAdminGUI()
     window.show()

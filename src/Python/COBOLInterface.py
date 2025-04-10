@@ -31,6 +31,16 @@ def COBOL_call(command_string, verbose=False):
 
 def COBOL_compile():
     # Compile the COBOL program
+    if not os.path.exists(COBOL_DIRECTORY):
+        os.makedirs(COBOL_DIRECTORY)
+
+    # Check if the COBOL binary exists
+    if os.path.isfile(BINARY_PATH):
+        print("COBOL program exists, return early boys.")
+        return True
+    else:
+        print("COBOL program does not exist. Compiling...")
+
     compile_command = [
         "cobc",
         "-x",
@@ -65,20 +75,6 @@ def COBOL_get_account(account_number: int) -> Account:
 
 
 if __name__ == "__main__":
-    if not os.path.exists(COBOL_DIRECTORY):
-        os.makedirs(COBOL_DIRECTORY)
-
-    # Check if the COBOL binary exists
-    if os.path.isfile(BINARY_PATH):
-        print("COBOL program exists.")
-    else:
-        print("COBOL program does not exist. Compiling...")
-        if COBOL_compile():
-            print("Compilation successful.")
-        else:
-            print("Compilation failed.")
-            raise Exception("Compilation failed.")
-
     response = COBOL_call("CREATE-ACCOUNT|John Doe|Checking|100")
     print("Response from COBOL:", response)
 

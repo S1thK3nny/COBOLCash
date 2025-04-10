@@ -6,7 +6,6 @@ from PyQt6.QtCore import (
     Qt,
     QModelIndex,
 )
-from Account import Account, AccountType
 from COBOLInterface import COBOL_call, COBOL_get_account
 
 

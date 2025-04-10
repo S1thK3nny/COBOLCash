@@ -103,6 +103,8 @@
                    PERFORM CREATE-ACCOUNT
                WHEN "GET-ACCOUNT"
                    PERFORM GET-ACCOUNT
+               WHEN "LIST-ACCOUNTS"
+                   PERFORM LIST-ACCOUNTS
                WHEN OTHER
                    DISPLAY "ERROR|Unknown command"
            END-EVALUATE.
@@ -176,3 +178,30 @@
                      "|" AR-OPEN-DATE 
                      "|" AR-LAST-UPDATE
               END-READ.
+
+       LIST-ACCOUNTS.
+           MOVE LOW-VALUES TO AR-ACCOUNT-NUMBER
+           START ACCOUNT-FILE KEY IS >= AR-ACCOUNT-NUMBER
+           IF NOT SUCCESS
+               DISPLAY "ERROR|No accounts found"
+               EXIT PARAGRAPH
+           END-IF
+
+           DISPLAY "LIST-START"
+
+           PERFORM UNTIL 1 = 2
+                READ ACCOUNT-FILE NEXT RECORD
+                     INVALID KEY
+                          EXIT PERFORM
+                     NOT INVALID KEY
+                          DISPLAY AR-ACCOUNT-NUMBER 
+                          "|" AR-ACCOUNT-HOLDER 
+                          "|" AR-ACCOUNT-TYPE 
+                          "|" AR-ACCOUNT-BALANCE 
+                          "|" AR-STATUS 
+                          "|" AR-OPEN-DATE 
+                          "|" AR-LAST-UPDATE
+                END-READ
+           END-PERFORM
+
+           DISPLAY "LIST-END".
