@@ -187,13 +187,11 @@
                EXIT PARAGRAPH
            END-IF
 
-           DISPLAY "LIST-START"
-
            PERFORM UNTIL 1 = 2
                 READ ACCOUNT-FILE NEXT RECORD
-                     INVALID KEY
+                     AT END
                           EXIT PERFORM
-                     NOT INVALID KEY
+                     NOT AT END
                           DISPLAY AR-ACCOUNT-NUMBER 
                           "|" AR-ACCOUNT-HOLDER 
                           "|" AR-ACCOUNT-TYPE 
@@ -201,7 +199,6 @@
                           "|" AR-STATUS 
                           "|" AR-OPEN-DATE 
                           "|" AR-LAST-UPDATE
+                          DISPLAY "ACC-DONE"
                 END-READ
-           END-PERFORM
-
-           DISPLAY "LIST-END".
+           END-PERFORM.

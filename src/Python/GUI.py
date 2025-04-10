@@ -26,6 +26,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import QDate, pyqtSignal, Qt
 from Account import Account, AccountType, AccountStatus
 from AccountList import AccountsTableModel
+from COBOLInterface import COBOL_list_accounts
 
 
 class AccountDetailsWidget(QWidget):
@@ -835,7 +836,7 @@ class BankingAdminGUI(QMainWindow):
         super().__init__()
         self.setWindowTitle("Banking Admin System")
         self.setMinimumSize(1000, 700)
-        self.accounts_model = AccountsTableModel([])
+        self.accounts_model = AccountsTableModel(COBOL_list_accounts())
         self.selected_account = None
         self.initUI()
 

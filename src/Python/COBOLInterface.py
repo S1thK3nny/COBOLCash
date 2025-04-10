@@ -7,9 +7,6 @@ BINARY_PATH = os.path.join(COBOL_DIRECTORY, "basic")
 
 
 def COBOL_call(command_string, verbose=False):
-    if "|" not in command_string:
-        raise ValueError("Invalid COBOL command format.")
-
     proc = subprocess.Popen(
         [BINARY_PATH],
         stdin=subprocess.PIPE,
@@ -72,6 +69,32 @@ def COBOL_get_account(account_number: int) -> Account:
     acc.from_list(account_data)
 
     return acc
+
+
+def COBOL_list_accounts():
+    response = COBOL_call("LIST-ACCOUNTS")
+    if response.startswith("ERROR"):
+        print("Error fetching accounts:", response)
+        return []
+
+    lines = response.split("ACC-DONE")
+    accounts = []
+
+    for raw_account in lines:
+        raw_account = raw_account.strip()
+        if not raw_account:
+            continue
+
+        fields = [item.strip() for item in raw_account.split("|")]
+        if len(fields) < 7:
+            print("Skipping incomplete record:", fields)
+            continue
+
+        acc = Account()
+        acc.from_list(fields)
+        accounts.append(acc)
+
+    return accounts
 
 
 if __name__ == "__main__":
