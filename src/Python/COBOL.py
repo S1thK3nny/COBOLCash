@@ -24,7 +24,7 @@ def call_cobol(command_string, verbose=False):
 
     result = stdout.strip()
     if result.startswith("ERROR"):
-        raise Exception(f"COBOL responded with error: {result}")
+        return f"COBOL responded with error: {result}"
     return result
 
 
@@ -55,5 +55,8 @@ else:
         print("Compilation failed.")
         raise Exception("Compilation failed.")
 
-response = call_cobol("CREATE|John Doe|Checking|100")
+response = call_cobol("CREATE-ACCOUNT|John Doe|Checking|100")
 print("Response from COBOL:", response)
+
+response = call_cobol("GET-ACCOUNT|1")
+print("Response from COBOL:", [item.strip() for item in response.split("|")])

@@ -99,8 +99,10 @@
                INTO COMMAND
        
            EVALUATE COMMAND
-               WHEN "CREATE"
+               WHEN "CREATE-ACCOUNT"
                    PERFORM CREATE-ACCOUNT
+               WHEN "GET-ACCOUNT"
+                   PERFORM GET-ACCOUNT
                WHEN OTHER
                    DISPLAY "ERROR|Unknown command"
            END-EVALUATE.
@@ -156,3 +158,21 @@
       * Create transaction if the balance is above 0, need to implement
       * the transaction stuff before that though
       *     END-IF.
+
+       GET-ACCOUNT.
+              UNSTRING STDIN-LINE DELIMITED BY "|"
+                 INTO COMMAND, PARAM-ACCOUNT-NUMBER
+                
+              MOVE PARAM-ACCOUNT-NUMBER TO AR-ACCOUNT-NUMBER
+              READ ACCOUNT-FILE
+                INVALID KEY
+                     DISPLAY "ERROR|Account not found"
+                NOT INVALID KEY
+                     DISPLAY "OK|" AR-ACCOUNT-NUMBER 
+                     "|" AR-ACCOUNT-HOLDER 
+                     "|" AR-ACCOUNT-TYPE 
+                     "|" AR-ACCOUNT-BALANCE 
+                     "|" AR-STATUS 
+                     "|" AR-OPEN-DATE 
+                     "|" AR-LAST-UPDATE
+              END-READ.
