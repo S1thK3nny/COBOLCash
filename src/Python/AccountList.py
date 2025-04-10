@@ -9,8 +9,6 @@ from PyQt6.QtCore import (
 from Account import Account, AccountStatus
 from COBOLInterface import COBOL_call, COBOL_get_account
 
-# TODO: Update methods to all use the same stuff (either rows or accounts, no mixing)
-
 
 class AccountsTableModel(QAbstractTableModel):
     def __init__(self, accounts=None):
@@ -58,7 +56,7 @@ class AccountsTableModel(QAbstractTableModel):
                 return account.status.value
         return None
 
-    def add_account(self, account_holder, account_type, balance):
+    def add_account(self, account_holder, account_type, balance) -> Account:
         response = COBOL_call(
             f"CREATE-ACCOUNT|{account_holder}|{account_type.value}|{balance}"
         )
@@ -72,8 +70,9 @@ class AccountsTableModel(QAbstractTableModel):
         self._all_accounts.append(account)
         self.update_filters()
         print("Account created successfully:", account)
+        return account
 
-    def close_account(self, account):
+    def close_account(self, account: Account):
         # Keep the account, but close it
         try:
             response = COBOL_call(
@@ -133,20 +132,22 @@ class AccountsTableModel(QAbstractTableModel):
 
         print(f"Account {account.account_number} updated: {changed_fields}")
 
-    def remove_account(self, account):
+    def remove_account(self, account: Account) -> bool:
         try:
             response = COBOL_call(f"DELETE-ACCOUNT|{account.account_number}")
             if response.startswith("ERROR"):
                 print("Error deleting account:", response)
-                return
+                return False
         except ValueError:
             print("Account not found in full list.")
-            return
+            return False
         self._all_accounts.remove(account)
         self.update_filters()
         print("Account removed successfully:", account)
+        return True
 
-    def get_account(self, visible_row):
+    # TODO: Update the method to not use the visible row but straight up get it from COBOL backend
+    def get_account(self, visible_row: int):
         if 0 <= visible_row < len(self._accounts):
             return self._accounts[visible_row]
         return None
