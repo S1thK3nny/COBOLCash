@@ -105,6 +105,8 @@
                    PERFORM GET-ACCOUNT
                WHEN "LIST-ACCOUNTS"
                    PERFORM LIST-ACCOUNTS
+                WHEN "DELETE-ACCOUNT"
+                   PERFORM DELETE-ACCOUNT
                WHEN OTHER
                    DISPLAY "ERROR|Unknown command"
            END-EVALUATE.
@@ -202,3 +204,26 @@
                           DISPLAY "ACC-DONE"
                 END-READ
            END-PERFORM.
+       
+       DELETE-ACCOUNT.
+           UNSTRING STDIN-LINE DELIMITED BY "|"
+               INTO COMMAND, PARAM-ACCOUNT-NUMBER
+
+           MOVE PARAM-ACCOUNT-NUMBER TO AR-ACCOUNT-NUMBER
+           READ ACCOUNT-FILE
+           IF NOT SUCCESS
+               DISPLAY "ERROR|Account not found"
+               EXIT PARAGRAPH
+           END-IF
+
+           MOVE "Closed" TO AR-STATUS
+
+           PERFORM CURRENT-DATE-INTO-PLU
+           MOVE PARAM-LAST-UPDATE TO AR-LAST-UPDATE
+
+           REWRITE ACCOUNT-RECORD
+           IF SUCCESS
+               DISPLAY "OK|Account closed successfully"
+           ELSE
+               DISPLAY "ERROR|Failed to close account"
+           END-IF.

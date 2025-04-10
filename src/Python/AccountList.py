@@ -6,6 +6,7 @@ from PyQt6.QtCore import (
     Qt,
     QModelIndex,
 )
+from Account import AccountStatus
 from COBOLInterface import COBOL_call, COBOL_get_account
 
 
@@ -71,12 +72,18 @@ class AccountsTableModel(QAbstractTableModel):
         print("Account created successfully:", account)
 
     def remove_account(self, account):
+        # Keep the account, but close it
         try:
-            self._all_accounts.remove(account)
+            response = COBOL_call(f"DELETE-ACCOUNT|{account.account_number}")
+            if response.startswith("ERROR"):
+                print("Error deleting account:", response)
+                return
         except ValueError:
             print("Account not found in full list.")
             return
+        account.status = AccountStatus.CLOSED
         self.update_filters()
+        print("Account closed successfully:", account)
 
     def update_account(self, row, account):
         # Update based on visible row in filtered list
