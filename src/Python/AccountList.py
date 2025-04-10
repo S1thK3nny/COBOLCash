@@ -7,7 +7,7 @@ from PyQt6.QtCore import (
     QModelIndex,
 )
 from Account import Account, AccountType
-from COBOLInterface import call_cobol, get_account
+from COBOLInterface import COBOL_call, COBOL_get_account
 
 
 class AccountsTableModel(QAbstractTableModel):
@@ -57,13 +57,13 @@ class AccountsTableModel(QAbstractTableModel):
         return None
 
     def add_account(self, account_holder, account_type, balance):
-        response = call_cobol(
+        response = COBOL_call(
             f"CREATE-ACCOUNT|{account_holder}|{account_type.value}|{balance}"
         )
         if response.startswith("ERROR"):
             print("Error creating account:", response)
             return
-        account = get_account(response.split("|")[1])
+        account = COBOL_get_account(response.split("|")[1])
         if not account:
             print("Error fetching created account.")
             return

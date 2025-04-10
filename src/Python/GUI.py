@@ -916,7 +916,7 @@ class BankingAdminGUI(QMainWindow):
         tools_menu = menubar.addMenu("Tools")
 
         check_cobol_action = tools_menu.addAction("Check COBOL Installation")
-        compile_cobol_action = tools_menu.addAction("Compile COBOL Programs")
+        COBOL_compile_action = tools_menu.addAction("Compile COBOL Programs")
         tools_menu.addSeparator()
         consistency_check_action = tools_menu.addAction("Database Consistency Check")
         optimize_action = tools_menu.addAction("Optimize Database")
@@ -953,7 +953,7 @@ class BankingAdminGUI(QMainWindow):
         # Will be implemented
         pass
 
-    def compile_cobol_programs(self):
+    def COBOL_compile_programs(self):
         """Compile COBOL programs"""
         # Will be implemented
         pass

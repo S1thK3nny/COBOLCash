@@ -6,7 +6,7 @@ COBOL_DIRECTORY = "src/COBOL/"
 BINARY_PATH = os.path.join(COBOL_DIRECTORY, "basic")
 
 
-def call_cobol(command_string, verbose=False):
+def COBOL_call(command_string, verbose=False):
     if "|" not in command_string:
         raise ValueError("Invalid COBOL command format.")
 
@@ -29,7 +29,7 @@ def call_cobol(command_string, verbose=False):
     return result
 
 
-def compile_cobol():
+def COBOL_compile():
     # Compile the COBOL program
     compile_command = [
         "cobc",
@@ -46,8 +46,8 @@ def compile_cobol():
     return True
 
 
-def get_account(account_number: int) -> Account:
-    response = call_cobol(f"GET-ACCOUNT|{account_number}")
+def COBOL_get_account(account_number: int) -> Account:
+    response = COBOL_call(f"GET-ACCOUNT|{account_number}")
     if response.startswith("ERROR"):
         print("Error fetching account:", response)
         return None
@@ -73,14 +73,14 @@ if __name__ == "__main__":
         print("COBOL program exists.")
     else:
         print("COBOL program does not exist. Compiling...")
-        if compile_cobol():
+        if COBOL_compile():
             print("Compilation successful.")
         else:
             print("Compilation failed.")
             raise Exception("Compilation failed.")
 
-    response = call_cobol("CREATE-ACCOUNT|John Doe|Checking|100")
+    response = COBOL_call("CREATE-ACCOUNT|John Doe|Checking|100")
     print("Response from COBOL:", response)
 
-    response = call_cobol("GET-ACCOUNT|1")
+    response = COBOL_call("GET-ACCOUNT|1")
     print("Response from COBOL:", [item.strip() for item in response.split("|")])
