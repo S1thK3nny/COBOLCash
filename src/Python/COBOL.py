@@ -55,5 +55,5 @@ else:
         print("Compilation failed.")
         raise Exception("Compilation failed.")
 
-response = call_cobol("DEPOSIT|123456|100.00|ATM deposit")
+response = call_cobol("CREATE|John Doe|Checking|100")
 print("Response from COBOL:", response)

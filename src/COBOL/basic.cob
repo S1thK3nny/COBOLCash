@@ -48,10 +48,20 @@
            88 INVALID-RECORD   VALUE "22".
 
        01 STDIN-LINE         PIC X(200).
-       01 COMMAND            PIC X(10).
-       01 ACCOUNT-NUMBER     PIC 9(6).
-       01 AMOUNT             PIC 9(5)V99.
-       01 DESCRIPTION        PIC X(50).
+       01 COMMAND            PIC X(50).
+
+       01 CURRENT-DATE-DATA.
+           05 CD-YEAR          PIC 9(4).
+           05 CD-MONTH         PIC 9(2).
+           05 CD-DAY           PIC 9(2).
+
+       01  PARAM-ACCOUNT-NUMBER    PIC 9(6).
+       01  PARAM-ACCOUNT-HOLDER    PIC X(100).
+       01  PARAM-ACCOUNT-TYPE      PIC X(10).
+       01  PARAM-ACCOUNT-BALANCE   PIC 9(9)V99.
+       01  PARAM-STATUS            PIC X(10).
+       01  PARAM-OPEN-DATE         PIC X(10).
+       01  PARAM-LAST-UPDATE       PIC X(10).
        
        01 WS-EOF             PIC X VALUE 'N'.
        
@@ -86,12 +96,44 @@
        
        PROCESS-COMMAND.
            UNSTRING STDIN-LINE DELIMITED BY "|"
-               INTO COMMAND, ACCOUNT-NUMBER, AMOUNT, DESCRIPTION
+               INTO COMMAND
        
            EVALUATE COMMAND
-               WHEN "DEPOSIT"
-                   DISPLAY "OK|Deposited $" AMOUNT " into account " 
-      -                    ACCOUNT-NUMBER
+               WHEN "CREATE"
+                   PERFORM CREATE-ACCOUNT
                WHEN OTHER
                    DISPLAY "ERROR|Unknown command"
            END-EVALUATE.
+
+       CURRENT-DATE-INTO-CDD.
+           MOVE FUNCTION CURRENT-DATE TO CURRENT-DATE-DATA
+           STRING CD-YEAR DELIMITED BY SIZE
+                    "-" DELIMITED BY SIZE
+                    CD-MONTH DELIMITED BY SIZE
+                    "-" DELIMITED BY SIZE
+                    CD-DAY DELIMITED BY SIZE
+           INTO PARAM-LAST-UPDATE.
+
+       CREATE-ACCOUNT.
+           UNSTRING STDIN-LINE DELIMITED BY "|"
+                INTO COMMAND, PARAM-ACCOUNT-HOLDER,
+                PARAM-ACCOUNT-TYPE, PARAM-ACCOUNT-BALANCE
+               
+           PERFORM CURRENT-DATE-INTO-CDD
+           
+           MOVE 1 TO PARAM-ACCOUNT-NUMBER
+           MOVE PARAM-ACCOUNT-NUMBER TO AR-ACCOUNT-NUMBER
+           MOVE PARAM-ACCOUNT-HOLDER TO AR-ACCOUNT-HOLDER
+           MOVE PARAM-ACCOUNT-TYPE TO AR-ACCOUNT-TYPE
+           MOVE PARAM-ACCOUNT-BALANCE TO AR-ACCOUNT-BALANCE
+           MOVE "ACTIVE" TO AR-STATUS
+           MOVE PARAM-LAST-UPDATE TO AR-OPEN-DATE
+           MOVE PARAM-LAST-UPDATE TO AR-LAST-UPDATE
+           DISPLAY     "INFO|Creating account"
+           DISPLAY     "INFO|Account Number: " AR-ACCOUNT-NUMBER
+           DISPLAY     "INFO|Account Holder: " AR-ACCOUNT-HOLDER
+           DISPLAY     "INFO|Account Type: " AR-ACCOUNT-TYPE
+           DISPLAY     "INFO|Account Balance: " AR-ACCOUNT-BALANCE
+           DISPLAY     "INFO|Account Status: " AR-STATUS
+           DISPLAY     "INFO|Account Open Date: " AR-OPEN-DATE
+           DISPLAY     "INFO|Account Last Update: " AR-LAST-UPDATE.
