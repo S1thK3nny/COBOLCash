@@ -5,7 +5,10 @@ COBOL_DIRECTORY = "src/COBOL/"
 BINARY_PATH = os.path.join(COBOL_DIRECTORY, "basic")
 
 
-def call_cobol(command_string):
+def call_cobol(command_string, verbose=False):
+    if "|" not in command_string:
+        raise ValueError("Invalid COBOL command format.")
+
     proc = subprocess.Popen(
         [BINARY_PATH],
         stdin=subprocess.PIPE,
@@ -15,9 +18,14 @@ def call_cobol(command_string):
     )
     stdout, stderr = proc.communicate(command_string + "\n")
 
-    if stderr:
-        print("COBOL Error:", stderr)
-    return stdout.strip()
+    if verbose:
+        print("[COBOL OUT]:", stdout)
+        print("[COBOL ERR]:", stderr)
+
+    result = stdout.strip()
+    if result.startswith("ERROR"):
+        raise Exception(f"COBOL responded with error: {result}")
+    return result
 
 
 def compile_cobol():
