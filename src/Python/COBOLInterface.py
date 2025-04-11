@@ -17,8 +17,10 @@ def COBOL_call(command_string, verbose=True):
     stdout, stderr = proc.communicate(command_string + "\n")
 
     if verbose:
-        print("[COBOL OUT]:", stdout)
-        print("[COBOL ERR]:", stderr)
+        if stdout:
+            print("[COBOL OUT]:", stdout)
+        if stderr:
+            print("[COBOL ERR]:", stderr)
 
     result = stdout.strip()
     if result.startswith("ERROR"):

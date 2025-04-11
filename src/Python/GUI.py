@@ -515,7 +515,6 @@ class AccountsManagerWidget(QWidget):
             row = selected_indexes[0].row()
             account = self.accounts_model.get_account(row)
             if account:
-                print("Selected account #", account.account_number)
                 self.account_selected.emit(account)
 
     def switch(self, index):
