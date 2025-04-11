@@ -245,8 +245,9 @@ class TransactionWidget(QWidget):
         str, str
     )  # Signal to update UI after transaction
 
-    def __init__(self):
+    def __init__(self, accounts_model):
         super().__init__()
+        self.accounts_model = accounts_model
         self.initUI()
 
     def initUI(self):
@@ -286,13 +287,17 @@ class TransactionWidget(QWidget):
         widget = QWidget()
         layout = QFormLayout()
 
-        self.deposit_account = QLineEdit()
+        self.deposit_account = QLineEdit()  # TODO: Use something better
+        self.deposit_account.setPlaceholderText("Account Number")
         self.deposit_amount = QDoubleSpinBox()
         self.deposit_amount.setRange(0.01, 1000000.00)
         self.deposit_amount.setPrefix("$")
         self.deposit_amount.setDecimals(2)
         self.deposit_description = QLineEdit()
         self.btn_process_deposit = QPushButton("Process Deposit")
+        self.btn_process_deposit.clicked.connect(
+            lambda: self.process_transaction("DEPOSIT")
+        )
 
         layout.addRow(
             "Account Number:", self.deposit_account
@@ -316,6 +321,9 @@ class TransactionWidget(QWidget):
         self.withdrawal_amount.setDecimals(2)
         self.withdrawal_description = QLineEdit()
         self.btn_process_withdrawal = QPushButton("Process Withdrawal")
+        self.btn_process_withdrawal.clicked.connect(
+            lambda: self.process_transaction("WITHDRAWAL")
+        )
 
         layout.addRow("Account Number:", self.withdrawal_account)
         layout.addRow("Amount:", self.withdrawal_amount)
@@ -406,15 +414,14 @@ class TransactionWidget(QWidget):
         """Change the displayed transaction form based on selection"""
         self.transaction_stack.setCurrentIndex(index)
 
-    def process_deposit(self):
-        """Process deposit transaction"""
-        # Will be implemented to interact with COBOL
-        pass
-
-    def process_withdrawal(self):
-        """Process withdrawal transaction"""
-        # Will be implemented to interact with COBOL
-        pass
+    def process_transaction(self, type: str):
+        """Process deposit/withdrawl transaction"""
+        self.accounts_model.process_transaction(
+            type,
+            int(self.deposit_account.text()),
+            self.deposit_amount.value(),
+            self.deposit_description.text(),
+        )
 
     def process_transfer(self):
         """Process transfer transaction"""
@@ -860,7 +867,7 @@ class BankingAdminGUI(QMainWindow):
         # Create the various tabs
         self.accounts_manager = AccountsManagerWidget(self.accounts_model)
         self.account_details = AccountDetailsWidget(self.accounts_model)
-        self.transaction_widget = TransactionWidget()
+        self.transaction_widget = TransactionWidget(self.accounts_model)
         self.reports_widget = ReportsWidget()
         self.settings_widget = SettingsWidget()
 

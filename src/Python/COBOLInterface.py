@@ -29,7 +29,7 @@ def COBOL_call(command_string, verbose=False):
 
         result = stdout.strip()
         if result.startswith("ERROR"):
-            return f"COBOL responded with error: {result}"
+            return result
         return result
 
     except OSError as e:
@@ -68,6 +68,7 @@ def COBOL_compile():
 
 def COBOL_get_account(account_number: int) -> Account:
     response = COBOL_call(f"GET-ACCOUNT|{account_number}")
+    print("Response from COBOL:", response)
     if response.startswith("ERROR"):
         print("Error fetching account:", response)
         return None

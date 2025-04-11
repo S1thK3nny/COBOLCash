@@ -152,6 +152,34 @@ class AccountsTableModel(QAbstractTableModel):
             return self._accounts[visible_row]
         return None
 
+    def process_transaction(
+        self, type: str, account_number: int, amount: float, description: str
+    ):
+        """
+        Process a transaction for a given account.
+
+        Args:
+            account: The account to process the transaction on.
+            amount: The amount to deposit or withdraw (negative for withdrawal).
+        """
+        account = self.get_account_by_id(account_number)
+        if not account:
+            print("Account not found.")
+            return
+
+        command = f"TRANSACTION|{type}|{account_number}|{amount}|{description}"
+        response = COBOL_call(command)
+        if response.startswith("ERROR"):
+            print("Error processing transaction:", response)
+            return
+
+        # Update succeeded, trigger UI refresh
+        account.balance = float(response.split("|")[3])
+        self.update_filters()
+        print(
+            f"Transaction processed successfully: {type} {amount} for account {account.account_number}"
+        )
+
     def set_filters(self, text="", status=None, acc_type=None):
         self.beginResetModel()
         self._filter_text = text.lower().strip()
@@ -190,3 +218,22 @@ class AccountsTableModel(QAbstractTableModel):
         self._accounts.sort(key=sort_key, reverse=reverse)
 
         self.layoutChanged.emit()
+
+    def get_account_by_id(self, account_number):
+        """
+        Find and return an account by its account number.
+        Searches first in the local cache, then falls back to COBOL backend if not found.
+
+        Args:
+            account_number: The account number to search for
+
+        Returns:
+            Account object if found, None otherwise
+        """
+        # First try to find in our cached accounts
+        for account in self._all_accounts:
+            if account.account_number == account_number:
+                return account
+
+        # If not found locally, try to fetch from COBOL backend
+        return COBOL_get_account(account_number)
