@@ -175,6 +175,8 @@ class AccountsTableModel(QAbstractTableModel):
 
         # Update succeeded, trigger UI refresh
         account.balance = float(response.split("|")[3])
+        amount_str = response.split("|")[4].replace("\nOK", "")  # Remove the \nOK
+        amount = float(amount_str)
         self.update_filters()
         print(
             f"Transaction processed successfully: {type} {amount} for account {account.account_number}"
