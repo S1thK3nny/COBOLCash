@@ -595,10 +595,17 @@ class AccountsManagerWidget(QWidget):
             return
 
         selected_row = selected_indexes[0].row()
-        print(f"Removing Account #{selected_row}")
-        self.accounts_model.remove_account(
-            self.accounts_model.get_account(selected_row)
+        account = self.accounts_model.get_account(selected_row)
+
+        confirm = QMessageBox.question(
+            self,
+            "Confirm Removal",
+            f"Are you sure you want to remove account #{account.account_number}?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
         )
+        if confirm == QMessageBox.StandardButton.Yes:
+            print(f"Removing Account #{account.account_number}")
+            self.accounts_model.remove_account(account)
 
     def apply_batch_interest(self):
         """Apply interest to multiple accounts"""
