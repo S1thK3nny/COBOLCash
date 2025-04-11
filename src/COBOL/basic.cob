@@ -65,6 +65,7 @@
 
        01  PARAM-FIELD             PIC X(20).
        01  PARAM-VALUE             PIC X(50).
+       01  PARAM-DESCRIPTION       PIC X(100).
        
        01  WS-EOF             PIC X VALUE 'N'.
        
@@ -147,6 +148,14 @@
                END-IF
            END-IF.
 
+       MOVE-PARAM-TO-AR-ACCOUNT-AND-READ-FILE.
+           MOVE PARAM-ACCOUNT-NUMBER TO AR-ACCOUNT-NUMBER
+           READ ACCOUNT-FILE
+           IF NOT SUCCESS
+               DISPLAY "ERROR|Account not found"
+               EXIT PARAGRAPH
+           END-IF
+
        CREATE-ACCOUNT.
            UNSTRING STDIN-LINE DELIMITED BY "|"
                 INTO COMMAND, PARAM-ACCOUNT-HOLDER,
@@ -222,12 +231,7 @@
            UNSTRING STDIN-LINE DELIMITED BY "|"
                INTO COMMAND, PARAM-ACCOUNT-NUMBER
 
-           MOVE PARAM-ACCOUNT-NUMBER TO AR-ACCOUNT-NUMBER
-           READ ACCOUNT-FILE
-           IF NOT SUCCESS
-               DISPLAY "ERROR|Account not found"
-               EXIT PARAGRAPH
-           END-IF
+           PERFORM MOVE-PARAM-TO-AR-ACCOUNT-AND-READ-FILE
 
            DELETE ACCOUNT-FILE
            IF SUCCESS
@@ -240,12 +244,7 @@
            UNSTRING STDIN-LINE DELIMITED BY "|"
            INTO COMMAND, PARAM-ACCOUNT-NUMBER, PARAM-FIELD, PARAM-VALUE
 
-           MOVE PARAM-ACCOUNT-NUMBER TO AR-ACCOUNT-NUMBER
-           READ ACCOUNT-FILE
-           IF NOT SUCCESS
-               DISPLAY "ERROR|Account not found"
-               EXIT PARAGRAPH
-           END-IF
+           PERFORM MOVE-PARAM-TO-AR-ACCOUNT-AND-READ-FILE
 
            EVALUATE PARAM-FIELD
                WHEN "ACCOUNT_HOLDER"
@@ -268,3 +267,22 @@
            ELSE
                DISPLAY "ERROR|Failed to update account"
            END-IF.
+
+       TRANSACTION.
+           UNSTRING STDIN-LINE DELIMITED BY "|"
+               INTO COMMAND, PARAM-FIELD,
+               PARAM-ACCOUNT-NUMBER, PARAM-VALUE, PARAM-DESCRIPTION
+
+      * Start using TR Records
+
+           PERFORM MOVE-PARAM-TO-AR-ACCOUNT-AND-READ-FILE
+
+           EVALUATE PARAM-FIELD
+               WHEN "DEPOSIT"
+                   CONTINUE
+               WHEN "WITHDRAWAL"
+                   CONTINUE
+               WHEN OTHER
+                  DISPLAY "ERROR|Unknown transaction type"
+           END-EVALUATE.
+           
