@@ -11,9 +11,9 @@
                FILE STATUS IS WS-FILE-STATUS.
            SELECT TRANSACTION-FILE ASSIGN TO "transaction.dat"
                ORGANIZATION IS INDEXED
-                ACCESS MODE IS DYNAMIC
-                RECORD KEY IS TR-TRANSACTION-ID
-                FILE STATUS IS WS-FILE-STATUS.
+               ACCESS MODE IS DYNAMIC
+               RECORD KEY IS TR-TRANSACTION-ID
+               FILE STATUS IS WS-FILE-STATUS.
        
        DATA DIVISION.
        FILE SECTION.
@@ -62,6 +62,11 @@
        01  PARAM-STATUS            PIC X(10).
        01  PARAM-OPEN-DATE         PIC X(10).
        01  PARAM-LAST-UPDATE       PIC X(10).
+
+       01  PARAM-TRANSACTION-ID    PIC 9(10).
+       01  PARAM-TR-TYPE           PIC X(10).
+       01  PARAM-TR-NOTES          PIC X(100).
+       01  PARAM-TR-AMOUNT         PIC 9(9)V99.
 
        01  PARAM-FIELD             PIC X(20).
        01  PARAM-VALUE             PIC X(50).
@@ -114,7 +119,7 @@
                WHEN "UPDATE-ACCOUNT"
                    PERFORM UPDATE-ACCOUNT
                WHEN "TRANSACTION"
-                   CONTINUE
+                   PERFORM DO-TRANSACTION
                WHEN "TRANSFER"
                    CONTINUE
                WHEN "APPLY-INTEREST"
@@ -148,13 +153,24 @@
                END-IF
            END-IF.
 
-       MOVE-PARAM-TO-AR-ACCOUNT-AND-READ-FILE.
+       GET-AVAILABLE-TRANSACTION-NUMBER.
+           MOVE HIGH-VALUES TO TR-TRANSACTION-ID
+           START TRANSACTION-FILE KEY IS <= TR-TRANSACTION-ID
+           IF SUCCESS
+               READ TRANSACTION-FILE PREVIOUS RECORD
+               IF SUCCESS
+                   ADD 1 TO TR-TRANSACTION-ID
+                   MOVE TR-TRANSACTION-ID to PARAM-TRANSACTION-ID
+               END-IF
+           END-IF.
+
+       MOVE-TO-AR-ACCOUNT-AND-READ-FILE.
            MOVE PARAM-ACCOUNT-NUMBER TO AR-ACCOUNT-NUMBER
            READ ACCOUNT-FILE
            IF NOT SUCCESS
                DISPLAY "ERROR|Account not found"
                EXIT PARAGRAPH
-           END-IF
+           END-IF.
 
        CREATE-ACCOUNT.
            UNSTRING STDIN-LINE DELIMITED BY "|"
@@ -231,7 +247,7 @@
            UNSTRING STDIN-LINE DELIMITED BY "|"
                INTO COMMAND, PARAM-ACCOUNT-NUMBER
 
-           PERFORM MOVE-PARAM-TO-AR-ACCOUNT-AND-READ-FILE
+           PERFORM MOVE-TO-AR-ACCOUNT-AND-READ-FILE
 
            DELETE ACCOUNT-FILE
            IF SUCCESS
@@ -244,7 +260,7 @@
            UNSTRING STDIN-LINE DELIMITED BY "|"
            INTO COMMAND, PARAM-ACCOUNT-NUMBER, PARAM-FIELD, PARAM-VALUE
 
-           PERFORM MOVE-PARAM-TO-AR-ACCOUNT-AND-READ-FILE
+           PERFORM MOVE-TO-AR-ACCOUNT-AND-READ-FILE
 
            EVALUATE PARAM-FIELD
                WHEN "ACCOUNT_HOLDER"
@@ -268,21 +284,76 @@
                DISPLAY "ERROR|Failed to update account"
            END-IF.
 
-       TRANSACTION.
+       CREATE-TRANSACTION.
+           PERFORM GET-AVAILABLE-TRANSACTION-NUMBER
+           PERFORM CURRENT-DATE-INTO-PLU
+      *    Whatever function calls this, ensure 
+      *    MOVE-TO-AR-ACCOUNT-AND-READ-FILE has been called before this.
+
+           MOVE PARAM-TRANSACTION-ID TO TR-TRANSACTION-ID
+           MOVE AR-ACCOUNT-NUMBER TO TR-ACCOUNT-NUMBER
+           MOVE PARAM-LAST-UPDATE TO TR-DATE
+           MOVE PARAM-TR-TYPE TO TR-TYPE
+           MOVE PARAM-TR-AMOUNT TO TR-AMOUNT
+           MOVE AR-ACCOUNT-BALANCE TO TR-BALANCE-AFTER     
+           MOVE PARAM-TR-NOTES TO TR-NOTES
+
+           WRITE TRANSACTION-RECORD
+               INVALID KEY
+                   DISPLAY "ERROR|Transaction creation failed"
+               NOT INVALID KEY
+                   DISPLAY "OK|" TR-TRANSACTION-ID
+                   "|Transaction created successfully"
+           END-WRITE.
+
+           
+
+       DO-TRANSACTION.
            UNSTRING STDIN-LINE DELIMITED BY "|"
-               INTO COMMAND, PARAM-FIELD,
-               PARAM-ACCOUNT-NUMBER, PARAM-VALUE, PARAM-DESCRIPTION
+               INTO COMMAND, PARAM-TR-TYPE, PARAM-ACCOUNT-NUMBER, 
+               PARAM-TR-AMOUNT, PARAM-TR-NOTES
 
-      * Start using TR Records
+           IF PARAM-TR-AMOUNT <= 0
+               DISPLAY "ERROR|Cannot deposit or withdraw negative money"
+               EXIT PARAGRAPH
+           END-IF
 
-           PERFORM MOVE-PARAM-TO-AR-ACCOUNT-AND-READ-FILE
+           PERFORM MOVE-TO-AR-ACCOUNT-AND-READ-FILE
 
-           EVALUATE PARAM-FIELD
+           IF AR-STATUS NOT = "ACTIVE"
+               DISPLAY "ERROR|Account is not active"
+               EXIT PARAGRAPH
+           END-IF
+
+           EVALUATE PARAM-TR-TYPE
                WHEN "DEPOSIT"
-                   CONTINUE
+                   ADD PARAM-TR-AMOUNT TO AR-ACCOUNT-BALANCE
+                   DISPLAY "OK|Deposited" PARAM-TR-AMOUNT
+                       "to" AR-ACCOUNT-NUMBER
                WHEN "WITHDRAWAL"
-                   CONTINUE
+      * Partial withdrawal
+                   IF PARAM-TR-AMOUNT > AR-ACCOUNT-BALANCE
+                       MOVE AR-ACCOUNT-BALANCE TO PARAM-TR-AMOUNT
+      * MOVE ZERO is preferred over var = 0 for whatever reason
+                       MOVE ZERO TO AR-ACCOUNT-BALANCE
+                       DISPLAY "OK|" AR-ACCOUNT-NUMBER "is now broke"
+                   ELSE
+                       SUBTRACT PARAM-TR-AMOUNT 
+                       FROM AR-ACCOUNT-BALANCE
+                       DISPLAY "OK|Withdrew" PARAM-TR-AMOUNT 
+                           "from" AR-ACCOUNT-NUMBER 
+                   END-IF
                WHEN OTHER
                   DISPLAY "ERROR|Unknown transaction type"
+                  EXIT PARAGRAPH
            END-EVALUATE.
+
+           REWRITE ACCOUNT-RECORD
+           IF NOT SUCCESS
+               DISPLAY "ERROR|Failed to update account"
+               EXIT PARAGRAPH
+           END-IF
+
+           PERFORM CREATE-TRANSACTION
            
+           DISPLAY "OK|Transaction was successful".
