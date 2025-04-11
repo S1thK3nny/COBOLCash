@@ -184,7 +184,7 @@
            MOVE PARAM-ACCOUNT-HOLDER TO AR-ACCOUNT-HOLDER
            MOVE PARAM-ACCOUNT-TYPE TO AR-ACCOUNT-TYPE
            MOVE PARAM-ACCOUNT-BALANCE TO AR-ACCOUNT-BALANCE
-           MOVE "ACTIVE" TO AR-STATUS
+           MOVE "Active" TO AR-STATUS
            MOVE PARAM-LAST-UPDATE TO AR-OPEN-DATE
            MOVE PARAM-LAST-UPDATE TO AR-LAST-UPDATE
 
@@ -320,29 +320,28 @@
 
            PERFORM MOVE-TO-AR-ACCOUNT-AND-READ-FILE
 
-           IF AR-STATUS NOT = "ACTIVE"
-               DISPLAY "ERROR|Account is not active"
+           IF AR-STATUS NOT = "Active"
+               DISPLAY "ERROR|Account is " AR-STATUS
                EXIT PARAGRAPH
            END-IF
 
            EVALUATE PARAM-TR-TYPE
                WHEN "DEPOSIT"
                    ADD PARAM-TR-AMOUNT TO AR-ACCOUNT-BALANCE
-                   DISPLAY "OK|Deposited" PARAM-TR-AMOUNT
-                       "to" AR-ACCOUNT-NUMBER
+                   DISPLAY "OK|Deposit|" AR-ACCOUNT-NUMBER 
+                       "|" AR-ACCOUNT-BALANCE "|" PARAM-TR-AMOUNT
                WHEN "WITHDRAWAL"
       * Partial withdrawal
                    IF PARAM-TR-AMOUNT > AR-ACCOUNT-BALANCE
                        MOVE AR-ACCOUNT-BALANCE TO PARAM-TR-AMOUNT
       * MOVE ZERO is preferred over var = 0 for whatever reason
                        MOVE ZERO TO AR-ACCOUNT-BALANCE
-                       DISPLAY "OK|" AR-ACCOUNT-NUMBER "is now broke"
                    ELSE
                        SUBTRACT PARAM-TR-AMOUNT 
                        FROM AR-ACCOUNT-BALANCE
-                       DISPLAY "OK|Withdrew" PARAM-TR-AMOUNT 
-                           "from" AR-ACCOUNT-NUMBER 
                    END-IF
+                   DISPLAY "OK|Withdraw|" AR-ACCOUNT-NUMBER "|" 
+                   AR-ACCOUNT-BALANCE "|" PARAM-TR-AMOUNT
                WHEN OTHER
                   DISPLAY "ERROR|Unknown transaction type"
                   EXIT PARAGRAPH
