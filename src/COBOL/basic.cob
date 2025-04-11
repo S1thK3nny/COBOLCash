@@ -66,7 +66,7 @@
        01  PARAM-FIELD             PIC X(20).
        01  PARAM-VALUE             PIC X(50).
        
-       01 WS-EOF             PIC X VALUE 'N'.
+       01  WS-EOF             PIC X VALUE 'N'.
        
        PROCEDURE DIVISION.
            PERFORM INITIALIZE-FILES
@@ -112,6 +112,14 @@
                    PERFORM DELETE-ACCOUNT
                WHEN "UPDATE-ACCOUNT"
                    PERFORM UPDATE-ACCOUNT
+               WHEN "TRANSACTION"
+                   CONTINUE
+               WHEN "TRANSFER"
+                   CONTINUE
+               WHEN "APPLY-INTEREST"
+                   CONTINUE
+               WHEN "CHARGE-FEE"
+                   CONTINUE
                WHEN OTHER
                    DISPLAY "ERROR|Unknown command"
            END-EVALUATE.
