@@ -2,28 +2,39 @@ import subprocess
 import os.path
 from Account import Account
 
-COBOL_DIRECTORY = "src/COBOL/"
+COBOL_DIRECTORY = os.path.join(os.getcwd(), "src/COBOL/")
 BINARY_PATH = os.path.join(COBOL_DIRECTORY, "basic")
 
 
 def COBOL_call(command_string, verbose=False):
-    proc = subprocess.Popen(
-        [BINARY_PATH],
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-    )
-    stdout, stderr = proc.communicate(command_string + "\n")
+    if not os.path.isfile(BINARY_PATH):
+        raise FileNotFoundError(f"COBOL binary not found at {BINARY_PATH}")
 
-    if verbose:
-        print("[COBOL OUT]:", stdout)
-        print("[COBOL ERR]:", stderr)
+    try:
+        proc = subprocess.Popen(
+            [BINARY_PATH],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        stdout, stderr = proc.communicate(command_string + "\n")
 
-    result = stdout.strip()
-    if result.startswith("ERROR"):
-        return f"COBOL responded with error: {result}"
-    return result
+        if verbose:
+            print("[COBOL IN]:", command_string)
+            print("[COBOL OUT]:", stdout)
+            print("[COBOL ERR]:", stderr)
+
+        result = stdout.strip()
+        if result.startswith("ERROR"):
+            return f"COBOL responded with error: {result}"
+        return result
+    
+    except OSError as e:
+        return f"ERROR: Failed to start COBOL binary: {e}"
+
+    except Exception as e:
+        return f"ERROR: Unexpected error: {e}"
 
 
 def COBOL_compile():

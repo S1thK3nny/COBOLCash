@@ -34,7 +34,7 @@ class AccountDetailsWidget(QWidget):
 
     def __init__(self, accounts_model):
         super().__init__()
-        current_account = None
+        self.current_account = None
         self.accounts_model = accounts_model
         self.initUI()
 
