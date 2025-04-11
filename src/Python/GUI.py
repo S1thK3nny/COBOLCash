@@ -157,9 +157,13 @@ class AccountDetailsWidget(QWidget):
         dialog.setLayout(layout)
 
         if dialog.exec():
-            # Apply changes
-            self.current_account.account_holder = name_edit.text().strip()
-            self.current_account.account_type = type_combo.currentData()
+            self.accounts_model.update_account(
+                self.current_account,
+                {
+                    "account_holder": name_edit.text().strip(),
+                    "account_type": type_combo.currentData(),
+                },
+            )
             self.load_account_data(self.current_account)
 
     def toggle_freeze(self):
@@ -172,13 +176,16 @@ class AccountDetailsWidget(QWidget):
             return
 
         if self.current_account.status == AccountStatus.FROZEN:
-            self.current_account.status = AccountStatus.ACTIVE
+            self.accounts_model.update_account(
+                self.current_account, {"status": AccountStatus.ACTIVE}
+            )
         elif self.current_account.status == AccountStatus.ACTIVE:
-            self.current_account.status = AccountStatus.FROZEN
+            self.accounts_model.update_account(
+                self.current_account, {"status": AccountStatus.FROZEN}
+            )
 
         self.status.setText(self.current_account.status.value)
         self.load_account_data(self.current_account)  # Refresh button states
-        # TODO: Add COBOL interaction to update the account status in the backend
 
     def close_account(self):
         """
@@ -194,7 +201,7 @@ class AccountDetailsWidget(QWidget):
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
         )
         if confirm == QMessageBox.StandardButton.Yes:
-            self.accounts_model.remove_account(self.current_account)
+            self.accounts_model.close_account(self.current_account)
             self.load_account_data(self.current_account)  # Refresh
 
     def load_account_data(self, account):
