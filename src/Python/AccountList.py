@@ -153,8 +153,13 @@ class AccountsTableModel(QAbstractTableModel):
         return None
 
     def process_transaction(
-        self, type: str, account_number: int, amount: float, description: str
-    ):
+        self,
+        type: str,
+        account_number: int,
+        amount: float,
+        description: str,
+        target_account: int = None,
+    ) -> bool:
         """
         Process a transaction for a given account.
 
@@ -165,13 +170,13 @@ class AccountsTableModel(QAbstractTableModel):
         account = self.get_account_by_id(account_number)
         if not account:
             print("Account not found.")
-            return
+            return False
 
         command = f"TRANSACTION|{type}|{account_number}|{amount}|{description}"
         response = COBOL_call(command)
         if response.startswith("ERROR"):
             print("Error processing transaction:", response)
-            return
+            return False
 
         # Update succeeded, trigger UI refresh
         account.balance = float(response.split("|")[3])
@@ -181,6 +186,8 @@ class AccountsTableModel(QAbstractTableModel):
         print(
             f"Transaction processed successfully: {type} {amount} for account {account.account_number}"
         )
+
+        return True
 
     def set_filters(self, text="", status=None, acc_type=None):
         self.beginResetModel()

@@ -22,8 +22,9 @@ from PyQt6.QtWidgets import (
     QTableView,
     QHeaderView,
     QMessageBox,
+    QCompleter,
 )
-from PyQt6.QtCore import QDate, pyqtSignal, Qt
+from PyQt6.QtCore import QDate, pyqtSignal, Qt, QSortFilterProxyModel
 from Account import Account, AccountType, AccountStatus
 from AccountList import AccountsTableModel
 from COBOLInterface import COBOL_list_accounts
@@ -242,7 +243,7 @@ class TransactionWidget(QWidget):
     """Widget for performing various transactions"""
 
     transaction_completed = pyqtSignal(
-        str, str
+        str, int
     )  # Signal to update UI after transaction
 
     def __init__(self, accounts_model):
@@ -282,15 +283,48 @@ class TransactionWidget(QWidget):
         main_layout.addWidget(self.transaction_stack)
         self.setLayout(main_layout)
 
+    def create_searchable_account_combo(self):
+        """Create a searchable account combo box that displays account number and holder"""
+        combo = QComboBox()
+        combo.setEditable(True)
+
+        # Create a custom model that formats the display text
+        class AccountComboModel(QSortFilterProxyModel):
+            def __init__(self, source_model):
+                super().__init__()
+                self.setSourceModel(source_model)
+
+            def data(self, index, role=Qt.ItemDataRole.DisplayRole):
+                if (
+                    role == Qt.ItemDataRole.DisplayRole
+                    or role == Qt.ItemDataRole.EditRole
+                ):
+                    account_index = self.mapToSource(index)
+                    account = self.sourceModel().get_account(account_index.row())
+                    if account:
+                        return f"#{account.account_number} - {account.account_holder}"
+                return super().data(index, role)
+
+        # Set up the proxy model
+        proxy_model = AccountComboModel(self.accounts_model)
+        combo.setModel(proxy_model)
+
+        # Set up the completer
+        completer = QCompleter(proxy_model)
+        completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
+        completer.setFilterMode(Qt.MatchFlag.MatchContains)
+        completer.setCompletionMode(QCompleter.CompletionMode.PopupCompletion)
+        combo.setCompleter(completer)
+
+        return combo
+
     def create_transaction_form(self, transaction_type):
         """Create a transaction form for either deposit or withdrawal"""
         widget = QWidget()
         layout = QFormLayout()
 
         # Create account selection combo box
-        account_select = QComboBox()
-        account_select.setModel(self.accounts_model)
-        account_select.setModelColumn(0)  # Display account numbers
+        account_select = self.create_searchable_account_combo()
 
         # Create amount field
         amount_field = QDoubleSpinBox()
@@ -340,14 +374,19 @@ class TransactionWidget(QWidget):
         widget = QWidget()
         layout = QFormLayout()
 
-        self.transfer_from = QLineEdit()
-        self.transfer_to = QLineEdit()
+        # Use searchable account combo boxes instead of QLineEdit
+        self.transfer_from = self.create_searchable_account_combo()
+        self.transfer_to = self.create_searchable_account_combo()
+
         self.transfer_amount = QDoubleSpinBox()
         self.transfer_amount.setRange(0.01, 1000000.00)
         self.transfer_amount.setPrefix("$")
         self.transfer_amount.setDecimals(2)
         self.transfer_description = QLineEdit()
         self.btn_process_transfer = QPushButton("Process Transfer")
+        self.btn_process_transfer.clicked.connect(
+            lambda: self.process_transaction("TRANSFER")
+        )
 
         layout.addRow("From Account:", self.transfer_from)
         layout.addRow("To Account:", self.transfer_to)
@@ -363,13 +402,16 @@ class TransactionWidget(QWidget):
         widget = QWidget()
         layout = QFormLayout()
 
-        self.interest_account = QLineEdit()
+        self.interest_account = self.create_searchable_account_combo()
         self.interest_rate = QDoubleSpinBox()
         self.interest_rate.setRange(0.01, 100.00)
         self.interest_rate.setSuffix("%")
         self.interest_rate.setDecimals(2)
         self.interest_description = QLineEdit()
         self.btn_apply_interest = QPushButton("Apply Interest")
+        self.btn_apply_interest.clicked.connect(
+            lambda: self.process_transaction("INTEREST")
+        )
 
         layout.addRow("Account Number:", self.interest_account)
         layout.addRow("Interest Rate:", self.interest_rate)
@@ -384,7 +426,7 @@ class TransactionWidget(QWidget):
         widget = QWidget()
         layout = QFormLayout()
 
-        self.fee_account = QLineEdit()
+        self.fee_account = self.create_searchable_account_combo()
         self.fee_amount = QDoubleSpinBox()
         self.fee_amount.setRange(0.01, 1000.00)
         self.fee_amount.setPrefix("$")
@@ -402,6 +444,7 @@ class TransactionWidget(QWidget):
         )
         self.fee_description = QLineEdit()
         self.btn_charge_fee = QPushButton("Charge Fee")
+        self.btn_charge_fee.clicked.connect(lambda: self.process_transaction("FEE"))
 
         layout.addRow("Account Number:", self.fee_account)
         layout.addRow("Fee Amount:", self.fee_amount)
@@ -416,51 +459,84 @@ class TransactionWidget(QWidget):
         """Change the displayed transaction form based on selection"""
         self.transaction_stack.setCurrentIndex(index)
 
-    def process_transaction(self, type: str):
+    def process_transaction(self, transaction_type: str):
         """Process deposit/withdrawal transaction"""
-        if type == "DEPOSIT":
+
+        target_account = None
+
+        if transaction_type == "DEPOSIT":
             account_combo = self.deposit_account
             amount = self.deposit_amount.value()
             description = self.deposit_description.text()
-        elif type == "WITHDRAWAL":
+        elif transaction_type == "WITHDRAWAL":
             account_combo = self.withdrawal_account
             amount = self.withdrawal_amount.value()
             description = self.withdrawal_description.text()
+        elif transaction_type == "TRANSFER":
+            account_combo = self.transfer_from
+            target_account = self.transfer_to
+            amount = self.transfer_amount.value()
+            description = self.transfer_description.text()
+        elif transaction_type == "INTEREST":
+            account_combo = self.interest_account
+            amount = self.interest_rate.value()
+            description = self.interest_description.text()
+        elif transaction_type == "FEE":
+            account_combo = self.fee_account
+            amount = self.fee_amount.value()
+            description = (
+                f"{self.fee_type.currentText()}: {self.fee_description.text()}"
+            )
         else:
-            # Handle other transaction types like TRANSFER
-            account_combo = None
-            amount = 0
-            description = ""
+            return
 
         # Get the selected account from the combo box
         account_index = account_combo.currentIndex()
         selected_account = self.accounts_model.get_account(account_index)
 
+        if target_account:
+            target_account = target_account.currentIndex()
+            target_account = self.accounts_model.get_account(target_account)
+
         if selected_account:
-            self.accounts_model.process_transaction(
-                type,
+            success = self.accounts_model.process_transaction(
+                transaction_type,
                 selected_account.account_number,
                 amount,
                 description,
+                target_account.account_number if target_account else None,
             )
+
+            if success:
+                self.transaction_completed.emit(
+                    transaction_type, selected_account.account_number
+                )
+                self._reset_transaction_form(transaction_type)
+            else:
+                QMessageBox.warning(
+                    self, "Transaction Error", "Transaction could not be processed."
+                )
         else:
             # Handle case where no account is selected
             QMessageBox.warning(self, "Transaction Error", "Please select an account.")
 
-    def process_transfer(self):
-        """Process transfer transaction"""
-        # Will be implemented to interact with COBOL
-        pass
-
-    def apply_interest(self):
-        """Apply interest to an account"""
-        # Will be implemented to interact with COBOL
-        pass
-
-    def charge_fee(self):
-        """Charge fee to an account"""
-        # Will be implemented to interact with COBOL
-        pass
+    def _reset_transaction_form(self, transaction_type: str):
+        """Reset form fields after successful transaction"""
+        if transaction_type == "DEPOSIT":
+            self.deposit_amount.setValue(0.01)
+            self.deposit_description.clear()
+        elif transaction_type == "WITHDRAWAL":
+            self.withdrawal_amount.setValue(0.01)
+            self.withdrawal_description.clear()
+        elif transaction_type == "TRANSFER":
+            self.transfer_amount.setValue(0.01)
+            self.transfer_description.clear()
+        elif transaction_type == "INTEREST":
+            self.interest_rate.setValue(0.01)
+            self.interest_description.clear()
+        elif transaction_type == "FEE":
+            self.fee_amount.setValue(0.01)
+            self.fee_description.clear()
 
 
 class AccountsManagerWidget(QWidget):
