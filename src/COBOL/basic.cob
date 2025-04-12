@@ -72,7 +72,9 @@
        01  PARAM-VALUE             PIC X(50).
        01  PARAM-DESCRIPTION       PIC X(100).
        
-       01  WS-EOF             PIC X VALUE 'N'.
+       01  WS-EOF                  PIC X VALUE 'N'.
+       01  WS-DISPLAY-BALANCE      PIC Z(9).99.
+
        
        PROCEDURE DIVISION.
            PERFORM INITIALIZE-FILES
@@ -183,7 +185,7 @@
            MOVE PARAM-ACCOUNT-NUMBER TO AR-ACCOUNT-NUMBER
            MOVE PARAM-ACCOUNT-HOLDER TO AR-ACCOUNT-HOLDER
            MOVE PARAM-ACCOUNT-TYPE TO AR-ACCOUNT-TYPE
-           MOVE PARAM-ACCOUNT-BALANCE TO AR-ACCOUNT-BALANCE
+           MOVE ZERO TO AR-ACCOUNT-BALANCE
            MOVE "Active" TO AR-STATUS
            MOVE PARAM-LAST-UPDATE TO AR-OPEN-DATE
            MOVE PARAM-LAST-UPDATE TO AR-LAST-UPDATE
@@ -194,12 +196,21 @@
                NOT INVALID KEY
                    DISPLAY "OK|" AR-ACCOUNT-NUMBER 
                    "|Account created successfully"
-           END-WRITE.
+           END-WRITE
 
-      *     IF SUCCESS
-      * Create transaction if the balance is above 0, need to implement
-      * the transaction stuff before that though
-      *     END-IF.
+           IF PARAM-ACCOUNT-BALANCE > 0
+      * Divide should also work, but if we don't do this
+      * 20 will become 2000 and banks would kill you if that happens
+               MOVE PARAM-ACCOUNT-BALANCE TO WS-DISPLAY-BALANCE
+               STRING "DO-TRANSACTION|DEPOSIT|" 
+               AR-ACCOUNT-NUMBER "|"
+               WS-DISPLAY-BALANCE "|Initial deposit" 
+               DELIMITED BY SIZE
+               INTO STDIN-LINE
+               PERFORM DO-TRANSACTION
+           END-IF.
+           
+
 
        GET-ACCOUNT.
               UNSTRING STDIN-LINE DELIMITED BY "|"
@@ -293,6 +304,7 @@
            MOVE PARAM-TRANSACTION-ID TO TR-TRANSACTION-ID
            MOVE AR-ACCOUNT-NUMBER TO TR-ACCOUNT-NUMBER
            MOVE PARAM-LAST-UPDATE TO TR-DATE
+           MOVE PARAM-LAST-UPDATE TO AR-LAST-UPDATE
            MOVE PARAM-TR-TYPE TO TR-TYPE
            MOVE PARAM-TR-AMOUNT TO TR-AMOUNT
            MOVE AR-ACCOUNT-BALANCE TO TR-BALANCE-AFTER     
