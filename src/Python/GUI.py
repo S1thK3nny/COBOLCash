@@ -24,6 +24,7 @@ from PyQt6.QtWidgets import (
     QMessageBox,
     QCompleter,
     QTableWidgetItem,
+    QAbstractItemView,
 )
 from PyQt6.QtCore import QDate, pyqtSignal, Qt, QSortFilterProxyModel
 from Account import Account, AccountType, AccountStatus
@@ -87,7 +88,7 @@ class AccountDetailsWidget(QWidget):
         self.transaction_table = QTableWidget()
         self.transaction_table.setColumnCount(5)
         self.transaction_table.setHorizontalHeaderLabels(
-            ["Date", "Type", "Amount", "Balance", "Description"]
+            ["Date", "Type", "Amount", "Balance After", "Description"]
         )
         self.transaction_table.horizontalHeader().setStretchLastSection(True)
 
@@ -99,7 +100,9 @@ class AccountDetailsWidget(QWidget):
         self.date_to.setDate(QDate.currentDate())
         self.filter_type = QComboBox()
         self.filter_type.addItem("All", None)
-        self.filter_type.addItems([t.value.title() for t in TransactionType])
+        for t in TransactionType:
+            self.filter_type.addItem(t.value.title(), t.value)
+
         self.btn_filter = QPushButton("Apply Filter")
 
         filter_layout.addWidget(QLabel("From:"))
@@ -257,7 +260,6 @@ class AccountDetailsWidget(QWidget):
             )
         )
 
-    # TODO: Sort by, filter button, make fields noneditable
     def load_transaction_history(
         self, account_id, date_from=None, date_to=None, trans_type=None
     ):
@@ -312,6 +314,11 @@ class AccountDetailsWidget(QWidget):
             self.transaction_table.setItem(row, 2, QTableWidgetItem(amount_text))
             self.transaction_table.setItem(row, 3, QTableWidgetItem(balance_text))
             self.transaction_table.setItem(row, 4, QTableWidgetItem(description_text))
+
+        self.transaction_table.setEditTriggers(
+            QAbstractItemView.EditTrigger.NoEditTriggers
+        )
+        self.transaction_table.setSortingEnabled(True)
 
 
 class TransactionWidget(QWidget):
