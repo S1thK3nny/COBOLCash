@@ -153,6 +153,7 @@ class AccountsTableModel(QAbstractTableModel):
             return self._accounts[visible_row]
         return None
 
+    # TODO: TRANSFER, INTEREST, FEE
     def process_transaction(
         self,
         transaction_type: TransactionType,

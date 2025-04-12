@@ -257,6 +257,7 @@ class AccountDetailsWidget(QWidget):
             )
         )
 
+    # TODO: Sort by, filter button, make fields noneditable
     def load_transaction_history(
         self, account_id, date_from=None, date_to=None, trans_type=None
     ):
@@ -269,7 +270,9 @@ class AccountDetailsWidget(QWidget):
         # If a transaction type filter is provided, filter the transactions in Python.
         if trans_type and trans_type != "All":
             transactions = [
-                tr for tr in transactions if tr.type.value.lower() == trans_type.lower()
+                tr
+                for tr in transactions
+                if tr.transaction_type.value.lower() == trans_type.lower()
             ]
 
         # Update table widget row count to match the number of transactions.
@@ -279,12 +282,30 @@ class AccountDetailsWidget(QWidget):
         for row, tr in enumerate(transactions):
             # Format date if available; otherwise, leave a blank cell.
             date_text = (
-                tr.date.strftime("%Y-%m-%d") if hasattr(tr, "date") and tr.date else ""
+                tr.transaction_date.strftime("%Y-%m-%d")
+                if hasattr(tr, "transaction_date") and tr.transaction_date
+                else ""
             )
-            type_text = tr.type.value.title() if hasattr(tr, "type") else ""
-            amount_text = f"${tr.amount:.2f}" if hasattr(tr, "amount") else ""
-            balance_text = f"${tr.balance:.2f}" if hasattr(tr, "balance") else ""
-            description_text = tr.description if hasattr(tr, "description") else ""
+            type_text = (
+                tr.transaction_type.value.title()
+                if hasattr(tr, "transaction_type")
+                else ""
+            )
+            amount_text = (
+                f"${tr.transaction_amount:.2f}"
+                if hasattr(tr, "transaction_amount")
+                else ""
+            )
+            balance_text = (
+                f"${tr.transaction_balance_after:.2f}"
+                if hasattr(tr, "transaction_balance_after")
+                else ""
+            )
+            description_text = (
+                tr.transaction_description
+                if hasattr(tr, "transaction_description")
+                else ""
+            )
 
             self.transaction_table.setItem(row, 0, QTableWidgetItem(date_text))
             self.transaction_table.setItem(row, 1, QTableWidgetItem(type_text))
