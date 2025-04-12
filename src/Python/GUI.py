@@ -252,7 +252,7 @@ class TransactionWidget(QWidget):
     """Widget for performing various transactions"""
 
     transaction_completed = pyqtSignal(
-        str, int
+        TransactionType, int
     )  # Signal to update UI after transaction
 
     def __init__(self, accounts_model):
@@ -358,7 +358,7 @@ class TransactionWidget(QWidget):
             self.withdrawal_amount = amount_field
             self.withdrawal_description = description_field
             self.btn_process_withdrawal = button
-        button.clicked.connect(lambda: self.process_transaction(transaction_type.value))
+        button.clicked.connect(lambda: self.process_transaction(transaction_type))
 
         # Add all fields to layout
         layout.addRow("Account:", account_select)
