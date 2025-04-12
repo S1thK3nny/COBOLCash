@@ -27,6 +27,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import QDate, pyqtSignal, Qt, QSortFilterProxyModel
 from Account import Account, AccountType, AccountStatus
 from AccountList import AccountsTableModel
+from Transaction import TransactionType
 from COBOLInterface import COBOL_list_accounts
 
 
@@ -96,9 +97,8 @@ class AccountDetailsWidget(QWidget):
         self.date_to = QDateEdit()
         self.date_to.setDate(QDate.currentDate())
         self.filter_type = QComboBox()
-        self.filter_type.addItems(
-            ["All", "Deposit", "Withdrawal", "Transfer", "Interest", "Fee"]
-        )
+        self.filter_type.addItem("All", None)
+        self.filter_type.addItems([t.value.title() for t in TransactionType])
         self.btn_filter = QPushButton("Apply Filter")
 
         filter_layout.addWidget(QLabel("From:"))
@@ -327,7 +327,7 @@ class TransactionWidget(QWidget):
 
         return combo
 
-    def create_transaction_form(self, transaction_type):
+    def create_transaction_form(self, transaction_type: TransactionType):
         """Create a transaction form for either deposit or withdrawal"""
         widget = QWidget()
         layout = QFormLayout()
@@ -345,21 +345,20 @@ class TransactionWidget(QWidget):
         description_field = QLineEdit()
 
         # Create button
-        button = QPushButton(f"Process {transaction_type.capitalize()}")
+        button = QPushButton(f"Process {transaction_type.value.capitalize()}")
 
         # Store fields as instance variables based on transaction type
-        if transaction_type == "DEPOSIT":
+        if transaction_type == TransactionType.DEPOSIT:
             self.deposit_account = account_select
             self.deposit_amount = amount_field
             self.deposit_description = description_field
             self.btn_process_deposit = button
-            button.clicked.connect(lambda: self.process_transaction("DEPOSIT"))
         else:  # WITHDRAWAL
             self.withdrawal_account = account_select
             self.withdrawal_amount = amount_field
             self.withdrawal_description = description_field
             self.btn_process_withdrawal = button
-            button.clicked.connect(lambda: self.process_transaction("WITHDRAWAL"))
+        button.clicked.connect(lambda: self.process_transaction(transaction_type.value))
 
         # Add all fields to layout
         layout.addRow("Account:", account_select)
@@ -372,11 +371,11 @@ class TransactionWidget(QWidget):
 
     def create_deposit_form(self):
         """Create deposit transaction form"""
-        return self.create_transaction_form("DEPOSIT")
+        return self.create_transaction_form(TransactionType.DEPOSIT)
 
     def create_withdrawal_form(self):
         """Create withdrawal transaction form"""
-        return self.create_transaction_form("WITHDRAWAL")
+        return self.create_transaction_form(TransactionType.WITHDRAWAL)
 
     def create_transfer_form(self):
         """Create transfer transaction form"""
@@ -394,7 +393,7 @@ class TransactionWidget(QWidget):
         self.transfer_description = QLineEdit()
         self.btn_process_transfer = QPushButton("Process Transfer")
         self.btn_process_transfer.clicked.connect(
-            lambda: self.process_transaction("TRANSFER")
+            lambda: self.process_transaction(TransactionType.TRANSFER)
         )
 
         layout.addRow("From Account:", self.transfer_from)
@@ -419,7 +418,7 @@ class TransactionWidget(QWidget):
         self.interest_description = QLineEdit()
         self.btn_apply_interest = QPushButton("Apply Interest")
         self.btn_apply_interest.clicked.connect(
-            lambda: self.process_transaction("INTEREST")
+            lambda: self.process_transaction(TransactionType.INTEREST)
         )
 
         layout.addRow("Account Number:", self.interest_account)
@@ -453,7 +452,9 @@ class TransactionWidget(QWidget):
         )
         self.fee_description = QLineEdit()
         self.btn_charge_fee = QPushButton("Charge Fee")
-        self.btn_charge_fee.clicked.connect(lambda: self.process_transaction("FEE"))
+        self.btn_charge_fee.clicked.connect(
+            lambda: self.process_transaction(TransactionType.FEE)
+        )
 
         layout.addRow("Account Number:", self.fee_account)
         layout.addRow("Fee Amount:", self.fee_amount)
@@ -468,29 +469,29 @@ class TransactionWidget(QWidget):
         """Change the displayed transaction form based on selection"""
         self.transaction_stack.setCurrentIndex(index)
 
-    def process_transaction(self, transaction_type: str):
+    def process_transaction(self, transaction_type: TransactionType):
         """Process deposit/withdrawal transaction"""
 
         target_account = None
 
-        if transaction_type == "DEPOSIT":
+        if transaction_type == TransactionType.DEPOSIT:
             account_combo = self.deposit_account
             amount = self.deposit_amount.value()
             description = self.deposit_description.text()
-        elif transaction_type == "WITHDRAWAL":
+        elif transaction_type == TransactionType.WITHDRAWAL:
             account_combo = self.withdrawal_account
             amount = self.withdrawal_amount.value()
             description = self.withdrawal_description.text()
-        elif transaction_type == "TRANSFER":
+        elif transaction_type == TransactionType.TRANSFER:
             account_combo = self.transfer_from
             target_account = self.transfer_to
             amount = self.transfer_amount.value()
             description = self.transfer_description.text()
-        elif transaction_type == "INTEREST":
+        elif transaction_type == TransactionType.INTEREST:
             account_combo = self.interest_account
             amount = self.interest_rate.value()
             description = self.interest_description.text()
-        elif transaction_type == "FEE":
+        elif transaction_type == TransactionType.FEE:
             account_combo = self.fee_account
             amount = self.fee_amount.value()
             description = (
@@ -529,21 +530,21 @@ class TransactionWidget(QWidget):
             # Handle case where no account is selected
             QMessageBox.warning(self, "Transaction Error", "Please select an account.")
 
-    def _reset_transaction_form(self, transaction_type: str):
+    def _reset_transaction_form(self, transaction_type: TransactionType):
         """Reset form fields after successful transaction"""
-        if transaction_type == "DEPOSIT":
+        if transaction_type == TransactionType.DEPOSIT:
             self.deposit_amount.setValue(0.01)
             self.deposit_description.clear()
-        elif transaction_type == "WITHDRAWAL":
+        elif transaction_type == TransactionType.WITHDRAWAL:
             self.withdrawal_amount.setValue(0.01)
             self.withdrawal_description.clear()
-        elif transaction_type == "TRANSFER":
+        elif transaction_type == TransactionType.TRANSFER:
             self.transfer_amount.setValue(0.01)
             self.transfer_description.clear()
-        elif transaction_type == "INTEREST":
+        elif transaction_type == TransactionType.INTEREST:
             self.interest_rate.setValue(0.01)
             self.interest_description.clear()
-        elif transaction_type == "FEE":
+        elif transaction_type == TransactionType.FEE:
             self.fee_amount.setValue(0.01)
             self.fee_description.clear()
 

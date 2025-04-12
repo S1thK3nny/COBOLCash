@@ -7,6 +7,7 @@ from PyQt6.QtCore import (
     QModelIndex,
 )
 from Account import Account, AccountStatus
+from Transaction import TransactionType
 from COBOLInterface import COBOL_call, COBOL_get_account
 
 
@@ -154,7 +155,7 @@ class AccountsTableModel(QAbstractTableModel):
 
     def process_transaction(
         self,
-        type: str,
+        transaction_type: TransactionType,
         account_number: int,
         amount: float,
         description: str,
@@ -172,7 +173,7 @@ class AccountsTableModel(QAbstractTableModel):
             print("Account not found.")
             return False
 
-        command = f"TRANSACTION|{type}|{account_number}|{amount}|{description}"
+        command = f"TRANSACTION|{transaction_type.value}|{account_number}|{amount}|{description}"
         response = COBOL_call(command)
         if response.startswith("ERROR"):
             print("Error processing transaction:", response)
@@ -184,7 +185,7 @@ class AccountsTableModel(QAbstractTableModel):
         amount = float(amount_str)
         self.update_filters()
         print(
-            f"Transaction processed successfully: {type} {amount} for account {account.account_number}"
+            f"Transaction processed successfully: {transaction_type.value} {amount} for account {account.account_number}"
         )
 
         return True

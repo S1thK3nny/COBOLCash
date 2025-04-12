@@ -1,4 +1,13 @@
 from datetime import datetime
+from enum import Enum
+
+
+class TransactionType(Enum):
+    DEPOSIT = "DEPOSIT"
+    WITHDRAWAL = "WITHDRAWAL"
+    TRANSFER = "TRANSFER"
+    INTEREST = "INTEREST"
+    FEE = "FEE"
 
 
 class Transaction:
@@ -7,7 +16,7 @@ class Transaction:
         transaction_id=0,
         transaction_account_number=0,
         transaction_date=None,
-        transaction_type="DEPOSIT",
+        transaction_type=TransactionType.DEPOSIT,
         transaction_amount=0,
         transaction_balance_after=0,
         transaction_description="",
@@ -19,11 +28,14 @@ class Transaction:
             transaction_id (int): The transaction ID.
             transaction_account_number (int): The account number associated with the transaction.
             transaction_date (datetime): The date of the transaction.
-            transaction_type (str): The type of the transaction (e.g., DEPOSIT, WITHDRAWAL).
+            transaction_type (TransactionType): The type of the transaction (e.g., Deposit, Withdrawal).
             transaction_amount (float): The amount of the transaction.
             transaction_balance_after (float): The balance after the transaction.
             transaction_description (str): A description of the transaction.
         """
+        if not isinstance(transaction_type, TransactionType):
+            transaction_type = TransactionType(transaction_type)
+
         self.transaction_id = transaction_id
         self.transaction_account_number = transaction_account_number
         self.transaction_date = transaction_date if transaction_date else datetime.now()
@@ -46,7 +58,7 @@ class Transaction:
         self.transaction_id = int(data[0])
         self.transaction_account_number = int(data[1])
         self.transaction_date = datetime.strptime(data[2], "%Y-%m-%d")
-        self.transaction_type = data[3]
+        self.transaction_type = TransactionType(data[2].upper())
         self.transaction_amount = float(data[4])
         self.transaction_balance_after = float(data[5])
         self.transaction_description = data[6]
