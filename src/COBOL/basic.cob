@@ -71,6 +71,8 @@
        01  PARAM-FIELD             PIC X(20).
        01  PARAM-VALUE             PIC X(50).
        01  PARAM-DESCRIPTION       PIC X(100).
+       01  PARAM-FROM-DATE         PIC X(10).
+       01  PARAM-TO-DATE           PIC X(10).
        
        01  WS-EOF                  PIC X VALUE 'N'.
        01  WS-DISPLAY-BALANCE      PIC Z(9).99.
@@ -375,7 +377,8 @@
 
        LIST-TRANSACTIONS.
            UNSTRING STDIN-LINE DELIMITED BY "|"
-               INTO COMMAND, PARAM-ACCOUNT-NUMBER
+               INTO COMMAND, PARAM-ACCOUNT-NUMBER, PARAM-FROM-DATE,
+               PARAM-TO-DATE
 
            PERFORM MOVE-TO-AR-ACCOUNT-AND-READ-FILE
 
@@ -393,15 +396,18 @@
                END-READ
 
                IF TR-ACCOUNT-NUMBER = PARAM-ACCOUNT-NUMBER
-      *    Check if Dates match
+                   IF (PARAM-FROM-DATE = SPACES OR TR-DATE >= 
+                   PARAM-FROM-DATE) AND (PARAM-TO-DATE = SPACES OR 
+                   TR-DATE <= PARAM-TO-DATE)
 
-               DISPLAY TR-TRANSACTION-ID 
-                       "|" TR-DATE
-                       "|" TR-TYPE
-                       "|" TR-AMOUNT
-                       "|" TR-BALANCE-AFTER
-                       "|" TR-NOTES
-               DISPLAY "TR-DONE"
+                      DISPLAY TR-TRANSACTION-ID 
+                              "|" TR-DATE
+                              "|" TR-TYPE
+                              "|" TR-AMOUNT
+                              "|" TR-BALANCE-AFTER
+                              "|" TR-NOTES
+                      DISPLAY "TR-DONE"
+                   END-IF
                END-IF
            END-PERFORM.
 

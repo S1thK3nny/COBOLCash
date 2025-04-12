@@ -3,6 +3,15 @@ from enum import Enum
 
 
 class TransactionType(Enum):
+    """
+    Enum representing different types of transactions.
+    - DEPOSIT: Money added to the account.
+    - WITHDRAWAL: Money taken from the account.
+    - TRANSFER: Money moved between accounts.
+    - INTEREST: Interest added to the account.
+    - FEE: Fees deducted from the account.
+    """
+
     DEPOSIT = "DEPOSIT"
     WITHDRAWAL = "WITHDRAWAL"
     TRANSFER = "TRANSFER"
