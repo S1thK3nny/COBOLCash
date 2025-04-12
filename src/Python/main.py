@@ -1,3 +1,11 @@
+"""
+Main entry point for the Banking Admin GUI application.
+This script initializes the GUI and compiles the COBOL program if necessary.
+It also handles the command-line arguments and starts the application.
+Usage:
+    python main.py
+"""
+
 # pylint: disable=no-name-in-module
 
 import sys

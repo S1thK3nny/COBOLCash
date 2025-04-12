@@ -73,6 +73,7 @@
        01  PARAM-DESCRIPTION       PIC X(100).
        01  PARAM-FROM-DATE         PIC X(10).
        01  PARAM-TO-DATE           PIC X(10).
+       01  PARAM-TO-ACCOUNT        PIC 9(6).
        
        01  WS-EOF                  PIC X VALUE 'N'.
        01  WS-DISPLAY-BALANCE      PIC Z(9).99.
@@ -125,7 +126,7 @@
                WHEN "TRANSACTION"
                    PERFORM DO-TRANSACTION
                WHEN "TRANSFER"
-                   CONTINUE
+                   PERFORM TRANSFER
                WHEN "APPLY-INTEREST"
                    CONTINUE
                WHEN "CHARGE-FEE"
@@ -346,10 +347,12 @@
 
            EVALUATE PARAM-TR-TYPE
                WHEN "DEPOSIT"
+               WHEN "TRANSFERIN"
                    ADD PARAM-TR-AMOUNT TO AR-ACCOUNT-BALANCE
-                   DISPLAY "OK|Deposit|" AR-ACCOUNT-NUMBER 
+                   DISPLAY "OK|" PARAM-TR-TYPE "|" AR-ACCOUNT-NUMBER 
                        "|" AR-ACCOUNT-BALANCE "|" PARAM-TR-AMOUNT
                WHEN "WITHDRAWAL"
+               WHEN "TRANSFEROU"
       * Partial withdrawal
                    IF PARAM-TR-AMOUNT > AR-ACCOUNT-BALANCE
                        MOVE AR-ACCOUNT-BALANCE TO PARAM-TR-AMOUNT
@@ -359,10 +362,11 @@
                        SUBTRACT PARAM-TR-AMOUNT 
                        FROM AR-ACCOUNT-BALANCE
                    END-IF
-                   DISPLAY "OK|Withdraw|" AR-ACCOUNT-NUMBER "|" 
+                   DISPLAY "OK|" PARAM-TR-TYPE "|" AR-ACCOUNT-NUMBER "|" 
                    AR-ACCOUNT-BALANCE "|" PARAM-TR-AMOUNT
                WHEN OTHER
-                  DISPLAY "ERROR|Unknown transaction type"
+                  DISPLAY "ERROR|Unknown transaction type|"
+                  PARAM-TR-TYPE
                   EXIT PARAGRAPH
            END-EVALUATE.
 
@@ -432,3 +436,60 @@
                DISPLAY "ERROR|Failed to update Transaction"
            END-IF.
 
+       TRANSFER.
+           UNSTRING STDIN-LINE DELIMITED BY "|"
+               INTO COMMAND, PARAM-ACCOUNT-NUMBER, 
+               PARAM-TR-AMOUNT, PARAM-TR-NOTES, PARAM-TO-ACCOUNT
+
+           IF PARAM-ACCOUNT-NUMBER EQUALS PARAM-TO-ACCOUNT
+               DISPLAY "ERROR|Cannot transfer to same account"
+               EXIT PARAGRAPH
+           END-IF.
+
+           IF PARAM-TR-AMOUNT < 0
+               DISPLAY "ERROR|Requested transfer is below 0"
+               EXIT PARAGRAPH
+           END-IF
+
+           PERFORM MOVE-TO-AR-ACCOUNT-AND-READ-FILE
+
+           IF PARAM-TR-AMOUNT > AR-ACCOUNT-BALANCE
+               MOVE AR-ACCOUNT-BALANCE TO PARAM-TR-AMOUNT
+           END-IF
+
+           IF PARAM-TR-AMOUNT EQUALS ZERO
+               DISPLAY "ERROR|Get your broke ass out of here"
+               EXIT PARAGRAPH
+           END-IF
+
+           STRING
+               "DO-TRANSACTION|TRANSFEROU|"
+               PARAM-ACCOUNT-NUMBER
+               "|"
+               PARAM-TR-AMOUNT
+               "|Transfer to #"
+               PARAM-TO-ACCOUNT
+               ":"
+               PARAM-TR-NOTES
+               DELIMITED BY SIZE
+               INTO STDIN-LINE.
+
+           PERFORM DO-TRANSACTION
+
+           MOVE PARAM-TO-ACCOUNT TO PARAM-ACCOUNT-NUMBER
+           MOVE AR-ACCOUNT-NUMBER TO PARAM-TO-ACCOUNT
+           PERFORM MOVE-TO-AR-ACCOUNT-AND-READ-FILE
+
+           STRING
+               "DO-TRANSACTION|TRANSFERIN|"
+               PARAM-ACCOUNT-NUMBER
+               "|"
+               PARAM-TR-AMOUNT
+               "|Transfer from #"
+               PARAM-TO-ACCOUNT
+               ":"
+               PARAM-TR-NOTES
+               DELIMITED BY SIZE
+               INTO STDIN-LINE.
+           PERFORM DO-TRANSACTION.
+      * TODO: Fuck it, redo the whole logic.

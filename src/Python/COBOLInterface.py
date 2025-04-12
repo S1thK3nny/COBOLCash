@@ -7,7 +7,7 @@ COBOL_DIRECTORY = os.path.join(os.getcwd(), "src/COBOL/")
 BINARY_PATH = os.path.join(COBOL_DIRECTORY, "basic")
 
 
-def COBOL_call(command_string, verbose=False):
+def COBOL_call(command_string, verbose=True):
     if not os.path.isfile(BINARY_PATH):
         raise FileNotFoundError(f"COBOL binary not found at {BINARY_PATH}")
 
@@ -148,6 +148,8 @@ def COBOL_list_transactions(account_number: int, from_date=None, to_date=None):
             print("Skipping incomplete record:", fields)
             continue
         fields.insert(1, account_number)
+        if fields[3].startswith("TRANSFER"):
+            fields[3] = fields[3][:8]
 
         tr = Transaction()
         tr.from_list(fields)

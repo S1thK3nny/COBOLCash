@@ -1,3 +1,10 @@
+"""
+Transaction.py
+
+This module defines the Transaction class and its associated methods.
+It includes the TransactionType enum for different transaction types.
+"""
+
 from datetime import datetime
 from enum import Enum
 
@@ -37,7 +44,7 @@ class Transaction:
             transaction_id (int): The transaction ID.
             transaction_account_number (int): The account number associated with the transaction.
             transaction_date (datetime): The date of the transaction.
-            transaction_type (TransactionType): The type of the transaction (e.g., Deposit, Withdrawal).
+            transaction_type (TransactionType): The type of the transaction (e.g., Deposit).
             transaction_amount (float): The amount of the transaction.
             transaction_balance_after (float): The balance after the transaction.
             transaction_description (str): A description of the transaction.

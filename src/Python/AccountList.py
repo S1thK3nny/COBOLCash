@@ -174,7 +174,16 @@ class AccountsTableModel(QAbstractTableModel):
             print("Account not found.")
             return False
 
-        command = f"TRANSACTION|{transaction_type.value}|{account_number}|{amount}|{description}"
+        if transaction_type == TransactionType.TRANSFER and target_account is None:
+            print("Target account is required for transfer.")
+            return False
+
+        if transaction_type == TransactionType.TRANSFER:
+            command = (
+                f"TRANSFER|{account_number}|{amount}|{description}|{target_account}"
+            )
+        else:
+            command = f"TRANSACTION|{transaction_type.value}|{account_number}|{amount}|{description}"
         response = COBOL_call(command)
         if response.startswith("ERROR"):
             print("Error processing transaction:", response)
