@@ -67,7 +67,7 @@ class Transaction:
         self.transaction_id = int(data[0])
         self.transaction_account_number = int(data[1])
         self.transaction_date = datetime.strptime(data[2], "%Y-%m-%d")
-        self.transaction_type = TransactionType(data[2].upper())
+        self.transaction_type = TransactionType(data[3].upper())
         self.transaction_amount = float(data[4])
         self.transaction_balance_after = float(data[5])
         self.transaction_description = data[6]

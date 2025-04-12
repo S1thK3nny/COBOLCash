@@ -112,7 +112,7 @@ def COBOL_list_accounts():
     return accounts
 
 
-def COBOL_list_transactions(account_number: int):
+def COBOL_list_transactions(account_number: int, from_date=None, to_date=None):
     """
     Fetches a list of transactions for a given account number.
     Args:
@@ -120,7 +120,17 @@ def COBOL_list_transactions(account_number: int):
     Returns:
         list: A list of Transaction objects.
     """
-    response = COBOL_call(f"LIST-TRANSACTIONS|{account_number}")
+    if not from_date:
+        from_date = " "
+    else:
+        from_date = from_date.strftime("%Y-%m-%d")
+
+    if not to_date:
+        to_date = " "
+    else:
+        to_date = to_date.strftime("%Y-%m-%d")
+
+    response = COBOL_call(f"LIST-TRANSACTIONS|{account_number}|{from_date}|{to_date}")
     if response.startswith("ERROR"):
         print("Error fetching accounts:", response)
         return []
@@ -137,7 +147,7 @@ def COBOL_list_transactions(account_number: int):
         if len(fields) < 6:
             print("Skipping incomplete record:", fields)
             continue
-        fields[1] = account_number
+        fields.insert(1, account_number)
 
         tr = Transaction()
         tr.from_list(fields)

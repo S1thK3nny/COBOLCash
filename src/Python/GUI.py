@@ -23,12 +23,13 @@ from PyQt6.QtWidgets import (
     QHeaderView,
     QMessageBox,
     QCompleter,
+    QTableWidgetItem,
 )
 from PyQt6.QtCore import QDate, pyqtSignal, Qt, QSortFilterProxyModel
 from Account import Account, AccountType, AccountStatus
 from AccountList import AccountsTableModel
 from Transaction import TransactionType
-from COBOLInterface import COBOL_list_accounts
+from COBOLInterface import COBOL_list_accounts, COBOL_list_transactions
 
 
 class AccountDetailsWidget(QWidget):
@@ -240,12 +241,56 @@ class AccountDetailsWidget(QWidget):
             self.btn_close.setEnabled(False)
             self.btn_edit.setEnabled(False)
 
+        self.load_transaction_history(
+            account.account_number,
+            self.date_from.date().toPyDate(),
+            self.date_to.date().toPyDate(),
+        )
+
+        # Connect filter button to load transaction history
+        self.btn_filter.clicked.connect(
+            lambda: self.load_transaction_history(
+                account.account_number,
+                self.date_from.date().toPyDate(),
+                self.date_to.date().toPyDate(),
+                self.filter_type.currentData(),
+            )
+        )
+
     def load_transaction_history(
         self, account_id, date_from=None, date_to=None, trans_type=None
     ):
-        """Load transaction history from backend with optional filters"""
-        # This will be implemented to interact with COBOL
-        pass
+        """
+        Load transaction history for the given account, optionally filtering by date range and transaction type.
+        Populates the QTableWidget with the returned transactions.
+        """
+        transactions = COBOL_list_transactions(account_id, date_from, date_to)
+
+        # If a transaction type filter is provided, filter the transactions in Python.
+        if trans_type and trans_type != "All":
+            transactions = [
+                tr for tr in transactions if tr.type.value.lower() == trans_type.lower()
+            ]
+
+        # Update table widget row count to match the number of transactions.
+        self.transaction_table.setRowCount(len(transactions))
+
+        # Populate the table. It's assumed that each transaction has attributes: date, type, amount, balance, description.
+        for row, tr in enumerate(transactions):
+            # Format date if available; otherwise, leave a blank cell.
+            date_text = (
+                tr.date.strftime("%Y-%m-%d") if hasattr(tr, "date") and tr.date else ""
+            )
+            type_text = tr.type.value.title() if hasattr(tr, "type") else ""
+            amount_text = f"${tr.amount:.2f}" if hasattr(tr, "amount") else ""
+            balance_text = f"${tr.balance:.2f}" if hasattr(tr, "balance") else ""
+            description_text = tr.description if hasattr(tr, "description") else ""
+
+            self.transaction_table.setItem(row, 0, QTableWidgetItem(date_text))
+            self.transaction_table.setItem(row, 1, QTableWidgetItem(type_text))
+            self.transaction_table.setItem(row, 2, QTableWidgetItem(amount_text))
+            self.transaction_table.setItem(row, 3, QTableWidgetItem(balance_text))
+            self.transaction_table.setItem(row, 4, QTableWidgetItem(description_text))
 
 
 class TransactionWidget(QWidget):
