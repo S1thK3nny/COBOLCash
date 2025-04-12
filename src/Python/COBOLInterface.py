@@ -1,6 +1,7 @@
 import subprocess
 import os.path
 from Account import Account
+from Transaction import Transaction
 
 COBOL_DIRECTORY = os.path.join(os.getcwd(), "src/COBOL/")
 BINARY_PATH = os.path.join(COBOL_DIRECTORY, "basic")
@@ -109,6 +110,40 @@ def COBOL_list_accounts():
         accounts.append(acc)
 
     return accounts
+
+
+def COBOL_list_transactions(account_number: int):
+    """
+    Fetches a list of transactions for a given account number.
+    Args:
+        account_number (int): The account number to fetch transactions for.
+    Returns:
+        list: A list of Transaction objects.
+    """
+    response = COBOL_call(f"LIST-TRANSACTIONS|{account_number}")
+    if response.startswith("ERROR"):
+        print("Error fetching accounts:", response)
+        return []
+
+    lines = response.split("TR-DONE")
+    transactions = []
+
+    for raw_tr in lines:
+        raw_tr = raw_tr.strip()
+        if not raw_tr:
+            continue
+
+        fields = [item.strip() for item in raw_tr.split("|")]
+        if len(fields) < 6:
+            print("Skipping incomplete record:", fields)
+            continue
+        fields[1] = account_number
+
+        tr = Transaction()
+        tr.from_list(fields)
+        transactions.append(tr)
+
+    return transactions
 
 
 if __name__ == "__main__":

