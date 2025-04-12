@@ -208,6 +208,15 @@ class AccountDetailsWidget(QWidget):
     def load_account_data(self, account):
         self.current_account = account
 
+        if account is None:
+            self.account_number.setText("Loading...")
+            self.account_holder.setText("Loading...")
+            self.account_type.setText("Loading...")
+            self.creation_date.setText("Loading...")
+            self.current_balance.setText("Loading...")
+            self.status.setText("Loading...")
+            return
+
         self.account_number.setText(str(account.account_number))
         self.account_holder.setText(account.account_holder)
         self.account_type.setText(account.account_type.value)
@@ -1053,6 +1062,7 @@ class BankingAdminGUI(QMainWindow):
 
     def on_tab_changed(self, index):
         if self.tabs.widget(index) is self.account_details and self.selected_account:
+            # TODO: On account removal, selected_account should be None
             self.account_details.load_account_data(self.selected_account)
 
     def switchToDetails(self):
