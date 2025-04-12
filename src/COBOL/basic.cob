@@ -207,6 +207,7 @@
            IF PARAM-ACCOUNT-BALANCE > 0
       * Divide should also work, but if we don't do this
       * 20 will become 2000 and banks would kill you if that happens
+               MOVE ZERO TO WS-DISPLAY-BALANCE
                MOVE PARAM-ACCOUNT-BALANCE TO WS-DISPLAY-BALANCE
                STRING "DO-TRANSACTION|DEPOSIT|" 
                AR-ACCOUNT-NUMBER "|"
@@ -331,7 +332,7 @@
                INTO COMMAND, PARAM-TR-TYPE, PARAM-ACCOUNT-NUMBER, 
                PARAM-TR-AMOUNT, PARAM-TR-NOTES
 
-           IF PARAM-TR-AMOUNT <= 0
+           IF PARAM-TR-AMOUNT < 0
                DISPLAY "ERROR|Cannot deposit or withdraw negative money"
                EXIT PARAGRAPH
            END-IF
